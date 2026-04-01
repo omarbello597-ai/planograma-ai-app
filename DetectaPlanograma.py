@@ -3,7 +3,7 @@ import requests
 import pandas as pd
 from datetime import datetime
 
-API_KEY = "AQUI_TU_API_KEY"
+API_KEY = "6Ln0uRwFG6fRkoQBO6Oq"
 MODEL_URL = "https://detect.roboflow.com/planograma_ai_simz_v1/2"
 
 st.title("📸 Auditoría de Góndola - Simoniz Verde")
