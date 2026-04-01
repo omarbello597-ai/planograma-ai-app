@@ -36,6 +36,7 @@ creds = Credentials.from_service_account_info(
 client = gspread.authorize(creds)
 # 🔍 DEBUG TEMPORAL
 st.write([s.title for s in client.open_by_key("1ulcTkLd4iG36zZYV4wSplQaLmixXdjPlOKPcyeTdAHc").worksheets()])
+st.write(client.openall())
 
 # ✅ IMPORTANTE: usar ID correcto del sheet
 sheet = client.open_by_key("1ulcTkLd4iG36zZYV4wSplQaLmixXdjPlOKPcyeTdAHc").worksheet("Hoja 1")
