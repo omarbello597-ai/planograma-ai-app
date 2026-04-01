@@ -8,11 +8,11 @@ MODEL_URL = "https://detect.roboflow.com/planograma_ai_simz_v1/2"
 
 st.title("📸 Auditoría de Góndola - Simoniz Verde")
 
-🏪 Input tienda
+#🏪 Input tienda
 
 tienda = st.text_input("Nombre de la tienda")
 
-📸 Subir imagen
+#📸 Subir imagen
 
 uploaded_file = st.file_uploader("Sube una foto", type=["jpg", "png"])
 
