@@ -1,45 +1,74 @@
 import streamlit as st
 import requests
+from PIL import Image
 import pandas as pd
 from datetime import datetime
+import gspread
+from oauth2client.service_account import ServiceAccountCredentials
+
+# -------------------------
+# CONFIGURACIÓN
+# -------------------------
 
 API_KEY = "6Ln0uRwFG6fRkoQBO6Oq"
 MODEL_URL = "https://detect.roboflow.com/planograma_ai_simz_v1/2"
 
-st.title("📸 Auditoría de Góndola - Simoniz Verde")
+# -------------------------
+# GOOGLE SHEETS CONEXIÓN
+# -------------------------
 
-#🏪 Input tienda
+scope = [
+    "https://spreadsheets.google.com/feeds",
+    "https://www.googleapis.com/auth/drive"
+]
+
+creds_dict = st.secrets["gcp_service_account"]
+creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, scope)
+client = gspread.authorize(creds)
+
+# 👉 Cambia esto por el nombre de tu hoja
+sheet = client.open("Reporte_Mercaderistas").sheet1
+
+# -------------------------
+# INTERFAZ
+# -------------------------
+
+st.title("📸 Detector de Planograma")
 
 tienda = st.text_input("Nombre de la tienda")
 
-#📸 Subir imagen
-
-uploaded_file = st.file_uploader("Sube una foto", type=["jpg", "png"])
+uploaded_file = st.file_uploader("Sube una imagen", type=["jpg", "png", "jpeg"])
 
 if uploaded_file is not None:
-    st.image(uploaded_file, caption="Imagen subida", use_column_width=True)
+    image = Image.open(uploaded_file)
+    st.image(image, caption="Imagen cargada", use_column_width=True)
 
-if st.button("Analizar"):
-    files = {"file": uploaded_file.getvalue()}
-    response = requests.post(
-        f"{MODEL_URL}?api_key={API_KEY}",
-        files=files
-    )
+    if st.button("Analizar"):
+        with st.spinner("Analizando..."):
 
-    data = response.json()
-    conteo = len(data["predictions"])
+            # Enviar a Roboflow
+            response = requests.post(
+                MODEL_URL,
+                params={"api_key": API_KEY},
+                files={"file": uploaded_file.getvalue()}
+            )
 
-    st.success(f"Productos detectados: {conteo}")
+            data = response.json()
 
-    # 📊 Guardar resultado
-    fecha = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            # Manejo seguro
+            predictions = data.get("predictions", [])
+            conteo = len(predictions)
 
-    df = pd.DataFrame([{
-        "tienda": tienda,
-        "fecha": fecha,
-        "productos_detectados": conteo
-    }])
+            st.success(f"Se detectaron {conteo} productos")
 
-    df.to_csv("reporte.csv", mode='a', header=False, index=False)
+            # -------------------------
+            # GUARDAR EN GOOGLE SHEETS
+            # -------------------------
 
-    st.success("Guardado en reporte ✅")
+            fecha = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+            nueva_fila = [tienda, fecha, conteo]
+
+            sheet.append_row(nueva_fila)
+
+            st.success("Reporte guardado en Google Sheets ✅")
