@@ -17,7 +17,7 @@ tienda = st.text_input("Nombre de la tienda")
 uploaded_file = st.file_uploader("Sube una foto", type=["jpg", "png"])
 
 if uploaded_file is not None:
-st.image(uploaded_file, caption="Imagen subida", use_column_width=True)
+    st.image(uploaded_file, caption="Imagen subida", use_column_width=True)
 
 if st.button("Analizar"):
     files = {"file": uploaded_file.getvalue()}
