@@ -27,7 +27,7 @@ creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, scope)
 client = gspread.authorize(creds)
 
 # 👉 Cambia esto por el nombre de tu hoja
-sheet = client.open_by_key("1DsajGf8MXQj9HVZqQAqLCMApGsfieC4sONGKjf2aQnw").worksheet("Hola 1")
+sheet = client.open_by_key("1DsajGf8MXQj9HVZqQAqLCMApGsfieC4sONGKjf2aQnw").sheet1
 
 # -------------------------
 # INTERFAZ
