@@ -171,16 +171,16 @@ if st.button("🚀 Analizar"):
 
         with col2:
             st.markdown(f"""
-            <div style="margin-left:40px; margin-top:30px;">
+            <div style="margin-left:70px; margin-top:30px;">
 
             <p style="color:#9ca3af;">Producto</p>
-            <h2 style="color:white;">{producto}</h2>
+            <h2 style="color:white; font-size:28px">{producto}</h2>
 
             <p style="color:#9ca3af;">Total</p>
-            <h1 style="color:#facc15;">{conteo}</h1>
+            <h1 style="color:#facc15;font-size:28px">{conteo}</h1>
 
             <p style="color:#9ca3af;">Confianza</p>
-            <h3 style="color:lime;">{confianza}</h3>
+            <h3 style="color:lime;font-size:18px">{confianza}</h3>
 
             </div>
             """, unsafe_allow_html=True)
