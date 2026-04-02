@@ -120,9 +120,7 @@ if st.button("🚀 Analizar"):
 
         data = response.json()
 
-        # 🔴 DEBUG (puedes quitar luego)
-        st.write("Respuesta del modelo:", data)
-
+        
         predictions = data.get("predictions")
 
         if predictions is None:
@@ -131,8 +129,7 @@ if st.button("🚀 Analizar"):
 
         conteo = len(predictions)
 
-        st.write(f"🔍 Predicciones detectadas: {conteo}")
-
+        
         if conteo > 0:
             productos = [p["class"] for p in predictions]
             producto = pd.Series(productos).value_counts().idxmax()
