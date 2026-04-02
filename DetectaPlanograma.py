@@ -7,6 +7,9 @@ import gspread
 from google.oauth2.service_account import Credentials
 import base64
 
+# -------------------------
+# CONFIG
+# -------------------------
 st.set_page_config(page_title="AI Vision System", layout="wide")
 
 # -------------------------
@@ -27,29 +30,71 @@ def get_base64(file):
 
 img_base64 = get_base64("fondo.png")
 
+# -------------------------
+# CSS
+# -------------------------
 st.markdown(f"""
 <style>
+
 [data-testid="stAppViewContainer"] {{
     background: url("data:image/png;base64,{img_base64}");
     background-size: cover;
+    background-position: center;
 }}
 
 .main, .block-container {{
     background: transparent !important;
 }}
 
+.block-container {{
+    padding-top: 1rem;
+}}
+
+[data-testid="stHeader"] {{
+    background: transparent;
+}}
+
 html, body {{
     color: white;
 }}
+
+/* INPUT */
+div[data-baseweb="base-input"] {{
+    background: transparent !important;
+    border: 1px solid rgba(0,255,255,0.6);
+    border-radius: 8px;
+}}
+
+div[data-baseweb="base-input"] input {{
+    background: transparent !important;
+    color: white !important;
+}}
+
+/* UPLOADER */
+[data-testid="stFileUploader"] {{
+    background: rgba(0,0,0,0.2);
+    border: 1px solid rgba(0,255,255,0.4);
+    border-radius: 10px;
+}}
+
+/* BOTÓN */
+.stButton>button {{
+    background: linear-gradient(90deg, #facc15, #00f5ff);
+    border-radius: 12px;
+    height: 45px;
+    font-weight: bold;
+}}
+
 </style>
 """, unsafe_allow_html=True)
 
 # -------------------------
-# HEADER
+# HEADER (SUBIDO)
 # -------------------------
 st.markdown("""
-<div style="margin-top:150px; margin-left:60px;">
+<div style="margin-top:60px; margin-left:60px;">
 <h2 style='color:#00f5ff;'>🤖 Category Management - AI Vision System</h2>
+<p style='color:#9ca3af;'>Smart detection. Real-time insights.</p>
 </div>
 """, unsafe_allow_html=True)
 
@@ -78,18 +123,22 @@ sheet = client.open_by_key("1ulcTkLd4iG36zZYV4wSplQaLmixXdjPlOKPcyeTdAHc").works
 # -------------------------
 # INPUTS
 # -------------------------
-col1, col2 = st.columns(2)
+st.markdown('<div style="margin-left:60px; max-width:900px;">', unsafe_allow_html=True)
+
+col1, col2 = st.columns([1,1])
 
 with col1:
-    tienda = st.text_input("Tienda")
+    tienda = st.text_input("🏪 Tienda")
 
 with col2:
-    uploaded_file = st.file_uploader("Imagen", type=["jpg","png","jpeg"])
+    uploaded_file = st.file_uploader("📸 Imagen", type=["jpg","png","jpeg"])
+
+st.markdown('</div>', unsafe_allow_html=True)
 
 # -------------------------
-# BOTÓN (SOLO PROCESA)
+# BOTÓN ANALIZAR
 # -------------------------
-if st.button("Analizar"):
+if st.button("🚀 Analizar"):
 
     if uploaded_file is None:
         st.warning("Sube una imagen primero")
@@ -116,7 +165,6 @@ if st.button("Analizar"):
             producto = "N/A"
             confianza = 0
 
-        # GUARDAR ESTADO
         st.session_state.resultado = {
             "conteo": conteo,
             "producto": producto,
@@ -126,20 +174,21 @@ if st.button("Analizar"):
 
         st.session_state.imagen = image
 
-        # GUARDAR EN SHEET
         fecha = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         sheet.append_row([tienda, fecha, producto, conteo])
 
         st.success("Guardado")
 
 # -------------------------
-# 🔥 MOSTRAR RESULTADOS SIEMPRE
+# RESULTADOS (SUBIDOS)
 # -------------------------
 if st.session_state.resultado:
 
-    col1, col2 = st.columns(2)
+    st.markdown('<div style="margin-top:-60px;">', unsafe_allow_html=True)
 
-    # Imagen
+    col1, col2 = st.columns([1.2,1])
+
+    # IMAGEN
     with col1:
         img = st.session_state.imagen.copy()
         draw = ImageDraw.Draw(img)
@@ -153,25 +202,27 @@ if st.session_state.resultado:
 
         st.image(img, width=500)
 
-    # Resultado
+    # RESULTADO
     with col2:
         r = st.session_state.resultado
 
         st.markdown(f"""
-<div style="
-    text-align:left;
-    margin-left:60px;
-    margin-top:40px;
-">
+        <div style="
+            text-align:left;
+            margin-left:80px;
+            margin-top:20px;
+        ">
 
-<p style="color:#9ca3af; font-size:14px;">Producto</p>
-<h2 style="color:white;">{r['producto']}</h2>
+        <p style="color:#9ca3af;">Producto</p>
+        <h2 style="color:white;">{r['producto']}</h2>
 
-<p style="color:#9ca3af; font-size:14px;">Total</p>
-<h1 style="color:#facc15;">{r['conteo']}</h1>
+        <p style="color:#9ca3af;">Total</p>
+        <h1 style="color:#facc15;">{r['conteo']}</h1>
 
-<p style="color:#9ca3af; font-size:14px;">Confianza</p>
-<h3 style="color:lime;">{r['confianza']}</h3>
+        <p style="color:#9ca3af;">Confianza</p>
+        <h3 style="color:lime;">{r['confianza']}</h3>
 
-</div>
-""", unsafe_allow_html=True)
+        </div>
+        """, unsafe_allow_html=True)
+
+    st.markdown('</div>', unsafe_allow_html=True)
