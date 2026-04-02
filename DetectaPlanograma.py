@@ -30,16 +30,11 @@ def get_base64(file):
 
 img_base64 = get_base64("fondo.png")
 
-# -------------------------
-# CSS
-# -------------------------
 st.markdown(f"""
 <style>
-
 [data-testid="stAppViewContainer"] {{
     background: url("data:image/png;base64,{img_base64}");
     background-size: cover;
-    background-position: center;
 }}
 
 .main, .block-container {{
@@ -50,15 +45,10 @@ st.markdown(f"""
     padding-top: 1rem;
 }}
 
-[data-testid="stHeader"] {{
-    background: transparent;
-}}
-
 html, body {{
     color: white;
 }}
 
-/* INPUT */
 div[data-baseweb="base-input"] {{
     background: transparent !important;
     border: 1px solid rgba(0,255,255,0.6);
@@ -70,26 +60,23 @@ div[data-baseweb="base-input"] input {{
     color: white !important;
 }}
 
-/* UPLOADER */
 [data-testid="stFileUploader"] {{
     background: rgba(0,0,0,0.2);
     border: 1px solid rgba(0,255,255,0.4);
     border-radius: 10px;
 }}
 
-/* BOTÓN */
 .stButton>button {{
     background: linear-gradient(90deg, #facc15, #00f5ff);
     border-radius: 12px;
     height: 45px;
     font-weight: bold;
 }}
-
 </style>
 """, unsafe_allow_html=True)
 
 # -------------------------
-# HEADER (SUBIDO)
+# HEADER
 # -------------------------
 st.markdown("""
 <div style="margin-top:60px; margin-left:60px;">
@@ -136,15 +123,35 @@ with col2:
 st.markdown('</div>', unsafe_allow_html=True)
 
 # -------------------------
+# MOSTRAR IMAGEN AL CARGAR
+# -------------------------
+if uploaded_file is not None:
+    st.session_state.imagen = Image.open(uploaded_file).convert("RGB")
+
+# -------------------------
+# PREVIEW IMAGEN
+# -------------------------
+if st.session_state.imagen:
+
+    st.markdown('<div style="margin-left:60px; margin-top:10px;">', unsafe_allow_html=True)
+
+    col1, col2 = st.columns([1.2,1])
+
+    with col1:
+        st.image(st.session_state.imagen, width=450)
+
+    st.markdown('</div>', unsafe_allow_html=True)
+
+# -------------------------
 # BOTÓN ANALIZAR
 # -------------------------
 if st.button("🚀 Analizar"):
 
-    if uploaded_file is None:
+    if st.session_state.imagen is None:
         st.warning("Sube una imagen primero")
     else:
 
-        image = Image.open(uploaded_file).convert("RGB")
+        image = st.session_state.imagen
 
         response = requests.post(
             MODEL_URL,
@@ -172,23 +179,19 @@ if st.button("🚀 Analizar"):
             "predictions": predictions
         }
 
-        st.session_state.imagen = image
-
         fecha = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         sheet.append_row([tienda, fecha, producto, conteo])
 
         st.success("Guardado")
 
 # -------------------------
-# RESULTADOS (SUBIDOS)
+# RESULTADOS
 # -------------------------
 if st.session_state.resultado:
 
-    st.markdown('<div style="margin-top:-60px;">', unsafe_allow_html=True)
-
     col1, col2 = st.columns([1.2,1])
 
-    # IMAGEN
+    # IMAGEN CON CAJAS
     with col1:
         img = st.session_state.imagen.copy()
         draw = ImageDraw.Draw(img)
@@ -200,18 +203,14 @@ if st.session_state.resultado:
 
             draw.rectangle([x1,y1,x2,y2], outline="lime", width=3)
 
-        st.image(img, width=500)
+        st.image(img, width=450)
 
-    # RESULTADO
+    # RESULTADO TEXTO
     with col2:
         r = st.session_state.resultado
 
         st.markdown(f"""
-        <div style="
-            text-align:left;
-            margin-left:80px;
-            margin-top:20px;
-        ">
+        <div style="margin-left:80px; margin-top:20px;">
 
         <p style="color:#9ca3af;">Producto</p>
         <h2 style="color:white;">{r['producto']}</h2>
@@ -224,5 +223,3 @@ if st.session_state.resultado:
 
         </div>
         """, unsafe_allow_html=True)
-
-    st.markdown('</div>', unsafe_allow_html=True)
