@@ -13,6 +13,15 @@ import base64
 st.set_page_config(page_title="AI Vision System", layout="wide")
 
 # -------------------------
+# SESSION STATE
+# -------------------------
+if "resultado" not in st.session_state:
+    st.session_state.resultado = None
+
+if "imagen" not in st.session_state:
+    st.session_state.imagen = None
+
+# -------------------------
 # FONDO
 # -------------------------
 def get_base64(file):
@@ -21,89 +30,46 @@ def get_base64(file):
 
 img_base64 = get_base64("fondo.png")
 
-# -------------------------
-# CSS COMPLETO
-# -------------------------
 st.markdown(f"""
 <style>
-
-/* 🌌 FONDO */
 [data-testid="stAppViewContainer"] {{
     background: url("data:image/png;base64,{img_base64}");
     background-size: cover;
-    background-position: center;
-    background-repeat: no-repeat;
 }}
 
-/* ❌ ELIMINAR GRIS */
-.main {{
-    background-color: transparent !important;
-}}
-
-.block-container {{
-    background-color: transparent !important;
-    padding: 2rem;
+.main, .block-container {{
+    background: transparent !important;
 }}
 
 [data-testid="stHeader"] {{
     background: transparent;
 }}
 
-/* TEXTO */
 html, body {{
     color: white;
 }}
 
-/* 🔥 INPUT REAL TRANSPARENTE */
 div[data-baseweb="base-input"] {{
-    background-color: transparent !important;
+    background: transparent !important;
     border: 1px solid rgba(0,255,255,0.6);
     border-radius: 8px;
-    backdrop-filter: blur(4px);
 }}
 
 div[data-baseweb="base-input"] input {{
-    background-color: transparent !important;
+    background: transparent !important;
     color: white !important;
 }}
 
-/* FILE UPLOADER */
 [data-testid="stFileUploader"] {{
     background: rgba(0,0,0,0.2);
     border: 1px solid rgba(0,255,255,0.4);
-    border-radius: 10px;
-    backdrop-filter: blur(6px);
 }}
 
-/* BOTÓN PRO */
 .stButton>button {{
     background: linear-gradient(90deg, #facc15, #00f5ff);
     border-radius: 12px;
     height: 45px;
-    font-weight: bold;
-    box-shadow: 0 0 15px rgba(0,255,255,0.5);
 }}
-
-/* SCANNER */
-.scan-container {{
-    position: relative;
-    display: inline-block;
-}}
-
-.scan-line {{
-    position: absolute;
-    width: 100%;
-    height: 3px;
-    background: lime;
-    box-shadow: 0 0 15px lime;
-    animation: scan 2s infinite linear;
-}}
-
-@keyframes scan {{
-    0% {{ top: 0%; }}
-    100% {{ top: 100%; }}
-}}
-
 </style>
 """, unsafe_allow_html=True)
 
@@ -112,12 +78,8 @@ div[data-baseweb="base-input"] input {{
 # -------------------------
 st.markdown("""
 <div style="margin-top:180px; margin-left:60px;">
-<h2 style='color:#00f5ff; font-size:32px;'>
-🤖 Category Management - AI Vision System
-</h2>
-<p style='color:#9ca3af; font-size:14px;'>
-Smart detection. Real-time insights.
-</p>
+<h2 style='color:#00f5ff;'>🤖 Category Management - AI Vision System</h2>
+<p style='color:#9ca3af;'>Smart detection. Real-time insights.</p>
 </div>
 """, unsafe_allow_html=True)
 
@@ -159,91 +121,90 @@ with col2:
 st.markdown('</div>', unsafe_allow_html=True)
 
 # -------------------------
-# FUNCION CAJAS
+# FUNCION BOXES
 # -------------------------
 def dibujar_cajas(image, predictions):
     draw = ImageDraw.Draw(image)
 
     for p in predictions:
-        x = p["x"]
-        y = p["y"]
-        w = p["width"]
-        h = p["height"]
-        label = p["class"]
-
-        x1 = x - w/2
-        y1 = y - h/2
-        x2 = x + w/2
-        y2 = y + h/2
+        x, y, w, h = p["x"], p["y"], p["width"], p["height"]
+        x1, y1 = x - w/2, y - h/2
+        x2, y2 = x + w/2, y + h/2
 
         draw.rectangle([x1,y1,x2,y2], outline="lime", width=3)
-        draw.text((x1, y1-10), label, fill="lime")
 
     return image
 
 # -------------------------
-# MAIN
+# BOTON ANALIZAR
 # -------------------------
-if uploaded_file:
+if st.button("🚀 Analizar"):
 
-    image = Image.open(uploaded_file).convert("RGB")
+    if uploaded_file is not None:
+
+        image = Image.open(uploaded_file).convert("RGB")
+
+        response = requests.post(
+            MODEL_URL,
+            params={"api_key": API_KEY},
+            files={"file": uploaded_file.getvalue()}
+        )
+
+        data = response.json()
+        predictions = data.get("predictions", [])
+
+        conteo = len(predictions)
+
+        if predictions:
+            productos = [p["class"] for p in predictions]
+            producto = pd.Series(productos).value_counts().idxmax()
+            confianza = round(sum([p["confidence"] for p in predictions]) / len(predictions), 2)
+        else:
+            producto = "N/A"
+            confianza = 0
+
+        # guardar estado
+        st.session_state.resultado = {
+            "conteo": conteo,
+            "producto": producto,
+            "confianza": confianza,
+            "predictions": predictions
+        }
+
+        st.session_state.imagen = image
+
+        fecha = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        sheet.append_row([tienda, fecha, producto, conteo])
+
+# -------------------------
+# MOSTRAR RESULTADO SI EXISTE
+# -------------------------
+if st.session_state.resultado and st.session_state.imagen:
 
     col1, col2 = st.columns([1.2,1])
 
-    if st.button("🚀 Analizar"):
+    img = dibujar_cajas(
+        st.session_state.imagen.copy(),
+        st.session_state.resultado["predictions"]
+    )
 
-        with st.spinner("Analizando..."):
+    with col1:
+        st.image(img, width=500)
 
-            response = requests.post(
-                MODEL_URL,
-                params={"api_key": API_KEY},
-                files={"file": uploaded_file.getvalue()}
-            )
+    with col2:
+        r = st.session_state.resultado
 
-            data = response.json()
-            predictions = data.get("predictions", [])
-            conteo = len(predictions)
+        st.markdown(f"""
+        <div style="text-align:center;">
+            <p style="color:#9ca3af;">Producto</p>
+            <h2 style="color:#00f5ff;">{r['producto']}</h2>
 
-            image_boxes = dibujar_cajas(image.copy(), predictions)
+            <p style="color:#9ca3af;">Total</p>
+            <h1 style="color:#facc15;">{r['conteo']}</h1>
 
-            # IMAGEN + SCANNER
-            with col1:
-                st.markdown('<div class="scan-container">', unsafe_allow_html=True)
-                st.image(image_boxes, width=500)
-                st.markdown('<div class="scan-line"></div>', unsafe_allow_html=True)
-                st.markdown('</div>', unsafe_allow_html=True)
+            <p style="color:#9ca3af;">Confianza</p>
+            <h3 style="color:lime;">{r['confianza']}</h3>
+        </div>
+        """, unsafe_allow_html=True)
 
-            # RESULTADOS
-            with col2:
-
-                if predictions:
-                    productos = [p["class"] for p in predictions]
-                    producto = pd.Series(productos).value_counts().idxmax()
-
-                    confianza = round(
-                        sum([p["confidence"] for p in predictions]) / len(predictions), 2
-                    )
-                else:
-                    producto = "N/A"
-                    confianza = 0
-
-                st.markdown(f"""
-                <div style="text-align:center;">
-                    <p style="color:#9ca3af;">Producto</p>
-                    <h2 style="color:#00f5ff;">{producto}</h2>
-
-                    <p style="color:#9ca3af;">Total</p>
-                    <h1 style="color:#facc15;">{conteo}</h1>
-
-                    <p style="color:#9ca3af;">Confianza</p>
-                    <h3 style="color:lime;">{confianza}</h3>
-                </div>
-                """, unsafe_allow_html=True)
-
-                fecha = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                sheet.append_row([tienda, fecha, producto, conteo])
-
-                st.success("✅ Guardado")
-
-    else:
-        st.image(image, width=400)
+        st.success("✅ Guardado")
