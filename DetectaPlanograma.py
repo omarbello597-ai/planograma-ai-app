@@ -13,7 +13,7 @@ import base64
 st.set_page_config(page_title="AI Vision System", layout="wide")
 
 # -------------------------
-# 🔥 USAR TU IMAGEN COMO FONDO
+# 🔥 FONDO CON TU IMAGEN (SIN GRIS)
 # -------------------------
 def get_base64(file):
     with open(file, "rb") as f:
@@ -24,42 +24,58 @@ img_base64 = get_base64("fondo.png")
 st.markdown(f"""
 <style>
 
+/* 🌌 FONDO REAL */
 [data-testid="stAppViewContainer"] {{
-    background: linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.7)),
-    url("data:image/png;base64,{img_base64}");
+    background: url("data:image/png;base64,{img_base64}");
     background-size: cover;
     background-position: center;
+    background-repeat: no-repeat;
+}}
+
+/* 🔥 ELIMINAR CAPAS GRISES */
+.main {{
+    background-color: transparent !important;
+}}
+
+.block-container {{
+    background-color: transparent !important;
+    padding: 2rem;
 }}
 
 [data-testid="stHeader"] {{
     background: transparent;
 }}
 
+/* Texto */
 html, body {{
     color: white;
 }}
 
-/* Inputs */
+/* Inputs más finos */
 input {{
     height: 35px !important;
     font-size: 14px !important;
-    background: rgba(0,0,0,0.6) !important;
-    border: 1px solid rgba(0,255,255,0.3) !important;
+    background: rgba(0,0,0,0.4) !important;
+    border: 1px solid rgba(0,255,255,0.4) !important;
+    color: white !important;
 }}
 
 /* File uploader */
 [data-testid="stFileUploader"] {{
-    background: rgba(0,0,0,0.6);
-    border: 1px solid rgba(0,255,255,0.3);
+    background: rgba(0,0,0,0.4);
+    border: 1px solid rgba(0,255,255,0.4);
+    border-radius: 10px;
 }}
 
 /* Botón */
 .stButton>button {{
     background: linear-gradient(90deg, #facc15, #00f5ff);
     border-radius: 10px;
+    height: 40px;
+    font-size: 14px;
 }}
 
-/* Scanner */
+/* 🟢 SCANNER SOBRE IMAGEN */
 .scan-container {{
     position: relative;
     display: inline-block;
@@ -93,7 +109,7 @@ st.markdown("""
 # -------------------------
 # API
 # -------------------------
-API_KEY = "TU_API_KEY"
+API_KEY = "6Ln0uRwFG6fRkoQBO6Oq"
 MODEL_URL = "https://detect.roboflow.com/planograma_ai_simz_v1/2"
 
 # -------------------------
@@ -118,13 +134,13 @@ sheet = client.open_by_key("1ulcTkLd4iG36zZYV4wSplQaLmixXdjPlOKPcyeTdAHc").works
 col1, col2 = st.columns([1,1])
 
 with col1:
-    tienda = st.text_input("Tienda")
+    tienda = st.text_input("🏪 Tienda")
 
 with col2:
-    uploaded_file = st.file_uploader("Imagen", type=["jpg","png","jpeg"])
+    uploaded_file = st.file_uploader("📸 Imagen", type=["jpg","png","jpeg"])
 
 # -------------------------
-# FUNCION CAJAS
+# FUNCION BOUNDING BOXES
 # -------------------------
 def dibujar_cajas(image, predictions):
     draw = ImageDraw.Draw(image)
@@ -134,6 +150,7 @@ def dibujar_cajas(image, predictions):
         y = p["y"]
         w = p["width"]
         h = p["height"]
+        label = p["class"]
 
         x1 = x - w/2
         y1 = y - h/2
@@ -141,6 +158,7 @@ def dibujar_cajas(image, predictions):
         y2 = y + h/2
 
         draw.rectangle([x1,y1,x2,y2], outline="lime", width=3)
+        draw.text((x1, y1-10), label, fill="lime")
 
     return image
 
@@ -176,12 +194,13 @@ if uploaded_file:
                 st.markdown('<div class="scan-line"></div>', unsafe_allow_html=True)
                 st.markdown('</div>', unsafe_allow_html=True)
 
-            # 📊 RESULTADOS (CORREGIDO)
+            # 📊 RESULTADOS
             with col2:
 
                 if predictions:
                     productos = [p["class"] for p in predictions]
                     producto = pd.Series(productos).value_counts().idxmax()
+
                     confianza = round(
                         sum([p["confidence"] for p in predictions]) / len(predictions), 2
                     )
