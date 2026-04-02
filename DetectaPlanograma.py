@@ -51,6 +51,22 @@ html, body {{
     color: white;
 }}
 
+/* INPUT TRANSPARENTE */
+div[data-baseweb="input"] > div {
+    background-color: transparent !important;
+}
+
+div[data-baseweb="input"] input {
+    background-color: transparent !important;
+    color: white !important;
+}
+
+/* BORDE FUTURISTA */
+div[data-baseweb="input"] {
+    border: 1px solid rgba(0,255,255,0.5);
+    border-radius: 8px;
+}
+
 /* Inputs más finos */
 input {{
     height: 35px !important;
