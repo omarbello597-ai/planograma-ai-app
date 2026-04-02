@@ -93,7 +93,6 @@ with col2:
 if uploaded_file is not None:
     st.session_state.imagen = Image.open(uploaded_file).convert("RGB")
 
-# Mostrar imagen (solo una vez)
 if st.session_state.imagen is not None:
     st.image(st.session_state.imagen, width=350)
 
@@ -109,26 +108,39 @@ if st.button("🚀 Analizar"):
 
         image = st.session_state.imagen
 
-        # 🔥 FIX PARA CELULAR
+        # 🔥 OPCIONAL: reducir tamaño (mejora detección y performance)
+        image = image.resize((800, 800))
+
+        # 🔥 FIX ROBUSTO PARA WEB + CELULAR
         response = requests.post(
             MODEL_URL,
             params={"api_key": API_KEY},
-            files={"file": uploaded_file}
+            files={"file": ("image.jpg", uploaded_file.getvalue(), "image/jpeg")}
         )
 
         data = response.json()
-        predictions = data.get("predictions", [])
+
+        # 🔴 DEBUG (puedes quitar luego)
+        st.write("Respuesta del modelo:", data)
+
+        predictions = data.get("predictions")
+
+        if predictions is None:
+            st.error("❌ Error en la respuesta del modelo")
+            st.stop()
 
         conteo = len(predictions)
 
-        if predictions:
+        st.write(f"🔍 Predicciones detectadas: {conteo}")
+
+        if conteo > 0:
             productos = [p["class"] for p in predictions]
             producto = pd.Series(productos).value_counts().idxmax()
             confianza = round(
                 sum([p["confidence"] for p in predictions]) / len(predictions), 2
             )
         else:
-            producto = "N/A"
+            producto = "No detectado"
             confianza = 0
 
         # -------------------------
