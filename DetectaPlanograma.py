@@ -7,9 +7,6 @@ import gspread
 from google.oauth2.service_account import Credentials
 import base64
 
-# -------------------------
-# CONFIG
-# -------------------------
 st.set_page_config(page_title="AI Vision System", layout="wide")
 
 # -------------------------
@@ -41,34 +38,8 @@ st.markdown(f"""
     background: transparent !important;
 }}
 
-[data-testid="stHeader"] {{
-    background: transparent;
-}}
-
 html, body {{
     color: white;
-}}
-
-div[data-baseweb="base-input"] {{
-    background: transparent !important;
-    border: 1px solid rgba(0,255,255,0.6);
-    border-radius: 8px;
-}}
-
-div[data-baseweb="base-input"] input {{
-    background: transparent !important;
-    color: white !important;
-}}
-
-[data-testid="stFileUploader"] {{
-    background: rgba(0,0,0,0.2);
-    border: 1px solid rgba(0,255,255,0.4);
-}}
-
-.stButton>button {{
-    background: linear-gradient(90deg, #facc15, #00f5ff);
-    border-radius: 12px;
-    height: 45px;
 }}
 </style>
 """, unsafe_allow_html=True)
@@ -77,9 +48,8 @@ div[data-baseweb="base-input"] input {{
 # HEADER
 # -------------------------
 st.markdown("""
-<div style="margin-top:180px; margin-left:60px;">
+<div style="margin-top:150px; margin-left:60px;">
 <h2 style='color:#00f5ff;'>🤖 Category Management - AI Vision System</h2>
-<p style='color:#9ca3af;'>Smart detection. Real-time insights.</p>
 </div>
 """, unsafe_allow_html=True)
 
@@ -108,39 +78,22 @@ sheet = client.open_by_key("1ulcTkLd4iG36zZYV4wSplQaLmixXdjPlOKPcyeTdAHc").works
 # -------------------------
 # INPUTS
 # -------------------------
-st.markdown('<div style="margin-left:60px; max-width:900px;">', unsafe_allow_html=True)
-
-col1, col2 = st.columns([1,1])
+col1, col2 = st.columns(2)
 
 with col1:
-    tienda = st.text_input("🏪 Tienda")
+    tienda = st.text_input("Tienda")
 
 with col2:
-    uploaded_file = st.file_uploader("📸 Imagen", type=["jpg","png","jpeg"])
-
-st.markdown('</div>', unsafe_allow_html=True)
+    uploaded_file = st.file_uploader("Imagen", type=["jpg","png","jpeg"])
 
 # -------------------------
-# FUNCION BOXES
+# BOTÓN (SOLO PROCESA)
 # -------------------------
-def dibujar_cajas(image, predictions):
-    draw = ImageDraw.Draw(image)
+if st.button("Analizar"):
 
-    for p in predictions:
-        x, y, w, h = p["x"], p["y"], p["width"], p["height"]
-        x1, y1 = x - w/2, y - h/2
-        x2, y2 = x + w/2, y + h/2
-
-        draw.rectangle([x1,y1,x2,y2], outline="lime", width=3)
-
-    return image
-
-# -------------------------
-# BOTON ANALIZAR
-# -------------------------
-if st.button("🚀 Analizar"):
-
-    if uploaded_file is not None:
+    if uploaded_file is None:
+        st.warning("Sube una imagen primero")
+    else:
 
         image = Image.open(uploaded_file).convert("RGB")
 
@@ -163,7 +116,7 @@ if st.button("🚀 Analizar"):
             producto = "N/A"
             confianza = 0
 
-        # guardar estado
+        # GUARDAR ESTADO
         st.session_state.resultado = {
             "conteo": conteo,
             "producto": producto,
@@ -173,38 +126,37 @@ if st.button("🚀 Analizar"):
 
         st.session_state.imagen = image
 
+        # GUARDAR EN SHEET
         fecha = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         sheet.append_row([tienda, fecha, producto, conteo])
 
+        st.success("Guardado")
+
 # -------------------------
-# MOSTRAR RESULTADO SI EXISTE
+# 🔥 MOSTRAR RESULTADOS SIEMPRE
 # -------------------------
-if st.session_state.resultado and st.session_state.imagen:
+if st.session_state.resultado:
 
-    col1, col2 = st.columns([1.2,1])
+    col1, col2 = st.columns(2)
 
-    img = dibujar_cajas(
-        st.session_state.imagen.copy(),
-        st.session_state.resultado["predictions"]
-    )
-
+    # Imagen
     with col1:
+        img = st.session_state.imagen.copy()
+        draw = ImageDraw.Draw(img)
+
+        for p in st.session_state.resultado["predictions"]:
+            x, y, w, h = p["x"], p["y"], p["width"], p["height"]
+            x1, y1 = x - w/2, y - h/2
+            x2, y2 = x + w/2, y + h/2
+
+            draw.rectangle([x1,y1,x2,y2], outline="lime", width=3)
+
         st.image(img, width=500)
 
+    # Resultado
     with col2:
         r = st.session_state.resultado
 
-        st.markdown(f"""
-        <div style="text-align:center;">
-            <p style="color:#9ca3af;">Producto</p>
-            <h2 style="color:#00f5ff;">{r['producto']}</h2>
-
-            <p style="color:#9ca3af;">Total</p>
-            <h1 style="color:#facc15;">{r['conteo']}</h1>
-
-            <p style="color:#9ca3af;">Confianza</p>
-            <h3 style="color:lime;">{r['confianza']}</h3>
-        </div>
-        """, unsafe_allow_html=True)
-
-        st.success("✅ Guardado")
+        st.write("Producto:", r["producto"])
+        st.write("Total:", r["conteo"])
+        st.write("Confianza:", r["confianza"])
