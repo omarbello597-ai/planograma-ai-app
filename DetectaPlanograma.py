@@ -1,58 +1,54 @@
 import streamlit as st
 import requests
-from PIL import Image, ImageDraw
+from PIL import Image
 import pandas as pd
 from datetime import datetime
 import gspread
 from google.oauth2.service_account import Credentials
 
 # -------------------------
-# CONFIG
+# CONFIGURACIÓN PÁGINA
 # -------------------------
-st.set_page_config(page_title="AI Vision System", layout="wide")
+st.set_page_config(page_title="CATEGORY MANAGEMENT - AI Vision System", layout="wide")
 
 # -------------------------
-# 🎨 CSS CORREGIDO
+# 🎨 FONDO FUTURISTA
 # -------------------------
 st.markdown("""
 <style>
 
-/* Fondo NEGRO FORZADO */
-html, body, [class*="css"]  {
-    background-color: #000000 !important;
-    color: white !important;
-}
-
-/* Contenedor principal */
+/* Fondo con imagen IA */
 [data-testid="stAppViewContainer"] {
-    background: #000000 !important;
+    background: linear-gradient(rgba(0,0,0,0.75), rgba(0,0,0,0.9)),
+    url("https://images.unsplash.com/photo-1677442136019-21780ecad995");
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
 }
 
-/* Header */
+/* Quitar header blanco */
 [data-testid="stHeader"] {
     background: transparent;
 }
 
-/* Título */
-.title {
-    font-size: 48px;
-    font-weight: 700;
-    background: linear-gradient(90deg, #00f5ff, #facc15);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
+/* Texto general */
+html, body {
+    color: white;
 }
 
 /* Inputs */
 input {
-    background: #0a0a0a !important;
-    border: 1px solid rgba(0,255,255,0.3) !important;
+    background-color: rgba(0,0,0,0.6) !important;
     color: white !important;
+    border: 1px solid rgba(0,255,255,0.3) !important;
 }
 
-/* Uploader */
+/* File uploader */
 [data-testid="stFileUploader"] {
-    background: #0a0a0a;
+    background-color: rgba(0,0,0,0.6);
     border: 1px solid rgba(0,255,255,0.3);
+    border-radius: 10px;
+    padding: 10px;
 }
 
 /* Botón */
@@ -60,44 +56,21 @@ input {
     background: linear-gradient(90deg, #facc15, #00f5ff);
     color: black;
     font-weight: bold;
-    border-radius: 20px;
-}
-
-/* Card */
-.hud-card {
-    background: rgba(0,0,0,0.7);
-    border: 1px solid rgba(0,255,255,0.3);
-    border-radius: 15px;
-    padding: 20px;
-}
-
-/* Imagen */
-.image-frame {
-    border: 2px solid rgba(0,255,255,0.4);
-    padding: 10px;
     border-radius: 10px;
 }
 
-/* Métrica */
-.metric {
-    font-size: 70px;
-    font-weight: bold;
-    color: #facc15;
+/* Contenedor principal tipo glass */
+.block-container {
+    background: rgba(0,0,0,0.5);
+    padding: 20px;
+    border-radius: 15px;
 }
 
 </style>
 """, unsafe_allow_html=True)
 
 # -------------------------
-# HEADER
-# -------------------------
-st.markdown("""
-<div class="title">AI Vision System</div>
-<p style="color:#9ca3af;">Smart detection. Real-time insights.</p>
-""", unsafe_allow_html=True)
-
-# -------------------------
-# API
+# CONFIGURACIÓN API
 # -------------------------
 API_KEY = "6Ln0uRwFG6fRkoQBO6Oq"
 MODEL_URL = "https://detect.roboflow.com/planograma_ai_simz_v1/2"
@@ -105,118 +78,69 @@ MODEL_URL = "https://detect.roboflow.com/planograma_ai_simz_v1/2"
 # -------------------------
 # GOOGLE SHEETS
 # -------------------------
+scope = [
+    "https://www.googleapis.com/auth/spreadsheets",
+    "https://www.googleapis.com/auth/drive"
+]
+
 creds_dict = st.secrets["gcp_service_account"]
 
 creds = Credentials.from_service_account_info(
     creds_dict,
-    scopes=[
-        "https://www.googleapis.com/auth/spreadsheets",
-        "https://www.googleapis.com/auth/drive"
-    ],
+    scopes=scope,
 )
 
 client = gspread.authorize(creds)
+
 sheet = client.open_by_key("1ulcTkLd4iG36zZYV4wSplQaLmixXdjPlOKPcyeTdAHc").worksheet("Hoja 1")
 
 # -------------------------
-# INPUTS
+# INTERFAZ
 # -------------------------
-st.markdown("### 📸 Upload & Analyze")
+st.markdown("""
+<h1 style='color:#00f5ff;'>🤖 AI Vision System</h1>
+<p style='color:#9ca3af;'>Smart detection. Real-time insights.</p>
+""", unsafe_allow_html=True)
 
-tienda = st.text_input("Nombre de la tienda")
-uploaded_file = st.file_uploader("Sube imagen", type=["jpg","png","jpeg"])
+tienda = st.text_input("🏪 Nombre de la tienda")
 
-# -------------------------
-# FUNCION CAJAS
-# -------------------------
-def dibujar_cajas(image, predictions):
-    draw = ImageDraw.Draw(image)
-
-    for p in predictions:
-        x = p["x"]
-        y = p["y"]
-        w = p["width"]
-        h = p["height"]
-
-        x1 = x - w/2
-        y1 = y - h/2
-        x2 = x + w/2
-        y2 = y + h/2
-
-        draw.rectangle([x1,y1,x2,y2], outline="#00f5ff", width=3)
-
-    return image
+uploaded_file = st.file_uploader("📸 Sube una imagen", type=["jpg", "png", "jpeg"])
 
 # -------------------------
-# MAIN
+# PROCESO
 # -------------------------
-if uploaded_file:
+if uploaded_file is not None:
+    image = Image.open(uploaded_file)
+    st.image(image, caption="Imagen cargada", use_column_width=True)
 
-    image = Image.open(uploaded_file).convert("RGB")
+    if st.button("🚀 Analizar"):
+        with st.spinner("🧠 Analizando con IA..."):
 
-    col1, col2 = st.columns([1.2,1])
+            try:
+                # Enviar a Roboflow
+                response = requests.post(
+                    MODEL_URL,
+                    params={"api_key": API_KEY},
+                    files={"file": uploaded_file.getvalue()}
+                )
 
-    if st.button("Analyze Image"):
+                data = response.json()
 
-        with st.spinner("Analyzing..."):
+                predictions = data.get("predictions", [])
+                conteo = len(predictions)
 
-            response = requests.post(
-                MODEL_URL,
-                params={"api_key": API_KEY},
-                files={"file": uploaded_file.getvalue()}
-            )
+                st.success(f"Se detectaron {conteo} productos")
 
-            data = response.json()
-            predictions = data.get("predictions", [])
-            conteo = len(predictions)
-
-            image_boxes = dibujar_cajas(image.copy(), predictions)
-
-            # -------------------------
-            # IMAGEN
-            # -------------------------
-            with col1:
-                st.markdown('<div class="image-frame">', unsafe_allow_html=True)
-                st.image(image_boxes, width=550)
-                st.markdown('</div>', unsafe_allow_html=True)
-
-            # -------------------------
-            # RESULTADOS
-            # -------------------------
-            with col2:
-                st.markdown('<div class="hud-card">', unsafe_allow_html=True)
-
-                if predictions:
-                    productos = [p["class"] for p in predictions]
-                    conteo_por_producto = pd.Series(productos).value_counts()
-                    producto = conteo_por_producto.idxmax()
-
-                    confianza = round(
-                        sum([p["confidence"] for p in predictions]) / len(predictions), 2
-                    )
-                else:
-                    producto = "N/A"
-                    confianza = 0
-
-                st.markdown(f"""
-                <div style="text-align:center;">
-                    <p style="color:#9ca3af;">Detected Product</p>
-                    <h2 style="color:#00f5ff;">{producto}</h2>
-
-                    <p style="color:#9ca3af;">Total</p>
-                    <div class="metric">{conteo}</div>
-
-                    <p style="color:#9ca3af;">Confidence</p>
-                    <h3 style="color:#facc15;">{confianza}</h3>
-                </div>
-                """, unsafe_allow_html=True)
-
+                # -------------------------
+                # GUARDAR EN GOOGLE SHEETS
+                # -------------------------
                 fecha = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                sheet.append_row([tienda, fecha, producto, conteo])
+                nueva_fila = [tienda, fecha, conteo]
 
-                st.success("Saved")
+                sheet.append_row(nueva_fila)
 
-                st.markdown('</div>', unsafe_allow_html=True)
+                st.success("✅ Reporte guardado en Google Sheets")
 
-    else:
-        st.image(image, width=500)
+            except Exception as e:
+                st.error("❌ Error al guardar en Google Sheets")
+                st.write(e)
