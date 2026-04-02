@@ -157,6 +157,21 @@ if st.session_state.resultado:
     with col2:
         r = st.session_state.resultado
 
-        st.write("Producto:", r["producto"])
-        st.write("Total:", r["conteo"])
-        st.write("Confianza:", r["confianza"])
+        st.markdown(f"""
+<div style="
+    text-align:left;
+    margin-left:60px;
+    margin-top:40px;
+">
+
+<p style="color:#9ca3af; font-size:14px;">Producto</p>
+<h2 style="color:white;">{r['producto']}</h2>
+
+<p style="color:#9ca3af; font-size:14px;">Total</p>
+<h1 style="color:#facc15;">{r['conteo']}</h1>
+
+<p style="color:#9ca3af; font-size:14px;">Confianza</p>
+<h3 style="color:lime;">{r['confianza']}</h3>
+
+</div>
+""", unsafe_allow_html=True)
