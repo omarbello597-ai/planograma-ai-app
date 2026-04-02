@@ -12,71 +12,91 @@ from google.oauth2.service_account import Credentials
 st.set_page_config(page_title="AI Vision System", layout="wide")
 
 # -------------------------
-# 🎨 ESTILO NEGRO + AMARILLO
+# 🎨 CSS FUTURISTA (HUD)
 # -------------------------
 st.markdown("""
 <style>
 
-/* Fondo negro premium */
+/* 🌌 Fondo */
 [data-testid="stAppViewContainer"] {
-    background-color: #000000;
+    background: radial-gradient(circle at center, #020617 0%, #000000 100%);
+    background-image: 
+        linear-gradient(rgba(0,255,255,0.08) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,255,255,0.08) 1px, transparent 1px);
+    background-size: 40px 40px;
 }
 
-/* Quitar header blanco */
+/* Header */
 [data-testid="stHeader"] {
     background: transparent;
 }
 
-/* Tipografía */
-html, body, [class*="css"] {
+/* Texto */
+html, body {
     color: white;
 }
 
-/* Título principal */
+/* Título */
 .title {
     font-size: 48px;
     font-weight: 700;
-    color: white;
+    background: linear-gradient(90deg, #00f5ff, #facc15);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
 }
 
 .subtitle {
-    font-size: 20px;
-    color: #facc15;
+    color: #9ca3af;
 }
 
-/* Cards elegantes */
-.card {
-    background: #0a0a0a;
-    border-radius: 16px;
-    padding: 20px;
-    border: 1px solid rgba(250,204,21,0.2);
+/* Inputs */
+input {
+    background: rgba(0,0,0,0.6) !important;
+    border: 1px solid rgba(0,255,255,0.3) !important;
+    color: white !important;
 }
 
-/* Métrica */
-.metric {
-    font-size: 60px;
-    font-weight: bold;
-    color: #facc15;
+/* File uploader */
+[data-testid="stFileUploader"] {
+    background: rgba(0,0,0,0.6);
+    border: 1px solid rgba(0,255,255,0.3);
+    border-radius: 10px;
 }
 
 /* Botón */
 .stButton>button {
-    background: #facc15;
+    background: linear-gradient(90deg, #facc15, #00f5ff);
     color: black;
     font-weight: bold;
-    border-radius: 8px;
+    border-radius: 25px;
+    box-shadow: 0 0 20px rgba(0,255,255,0.5);
 }
 
-/* Scan effect */
-.scan-container {
-    position: relative;
+/* Card HUD */
+.hud-card {
+    background: rgba(0, 0, 0, 0.6);
+    border: 1px solid rgba(0,255,255,0.3);
+    border-radius: 20px;
+    padding: 20px;
+    box-shadow: 0 0 30px rgba(0,255,255,0.2);
 }
 
+/* Imagen marco */
+.image-frame {
+    padding: 10px;
+    border-radius: 15px;
+    border: 2px solid rgba(0,255,255,0.4);
+    box-shadow: 
+        0 0 20px rgba(0,255,255,0.3),
+        inset 0 0 20px rgba(0,255,255,0.2);
+}
+
+/* Scan */
 .scan-line {
     position: absolute;
     width: 100%;
     height: 2px;
-    background: #facc15;
+    background: #00f5ff;
     animation: scan 2s infinite linear;
 }
 
@@ -85,11 +105,20 @@ html, body, [class*="css"] {
     100% { top: 100%; }
 }
 
+/* Métrica */
+.metric {
+    font-size: 70px;
+    font-weight: bold;
+    background: linear-gradient(90deg, #facc15, #00f5ff);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
 </style>
 """, unsafe_allow_html=True)
 
 # -------------------------
-# HEADER ESTILO IA
+# HEADER
 # -------------------------
 colH1, colH2 = st.columns([1,1])
 
@@ -103,7 +132,7 @@ with colH2:
     st.image("https://images.unsplash.com/photo-1677442136019-21780ecad995", width=350)
 
 # -------------------------
-# CONFIG API
+# API
 # -------------------------
 API_KEY = "6Ln0uRwFG6fRkoQBO6Oq"
 MODEL_URL = "https://detect.roboflow.com/planograma_ai_simz_v1/2"
@@ -133,7 +162,7 @@ tienda = st.text_input("Nombre de la tienda")
 uploaded_file = st.file_uploader("Sube imagen", type=["jpg","png","jpeg"])
 
 # -------------------------
-# FUNCIÓN CAJAS
+# FUNCION CAJAS
 # -------------------------
 def dibujar_cajas(image, predictions):
     draw = ImageDraw.Draw(image)
@@ -149,7 +178,7 @@ def dibujar_cajas(image, predictions):
         x2 = x + w/2
         y2 = y + h/2
 
-        draw.rectangle([x1,y1,x2,y2], outline="#facc15", width=3)
+        draw.rectangle([x1,y1,x2,y2], outline="#00f5ff", width=3)
 
     return image
 
@@ -163,7 +192,8 @@ if uploaded_file:
     col1, col2 = st.columns([1.2,1])
 
     with col1:
-        st.markdown('<div class="card">', unsafe_allow_html=True)
+
+        st.markdown('<div class="hud-card">', unsafe_allow_html=True)
 
         if st.button("Analyze Image"):
 
@@ -181,27 +211,40 @@ if uploaded_file:
 
                 image_boxes = dibujar_cajas(image.copy(), predictions)
 
-                st.markdown('<div class="scan-container">', unsafe_allow_html=True)
-                st.image(image_boxes, width=500)
+                st.markdown('<div class="image-frame">', unsafe_allow_html=True)
+                st.markdown('<div style="position:relative">', unsafe_allow_html=True)
+
+                st.image(image_boxes, width=550)
+
                 st.markdown('<div class="scan-line"></div>', unsafe_allow_html=True)
-                st.markdown('</div>', unsafe_allow_html=True)
+                st.markdown('</div></div>', unsafe_allow_html=True)
 
                 with col2:
-                    st.markdown('<div class="card">', unsafe_allow_html=True)
+
+                    st.markdown('<div class="hud-card">', unsafe_allow_html=True)
 
                     if predictions:
                         productos = [p["class"] for p in predictions]
                         conteo_por_producto = pd.Series(productos).value_counts()
                         producto = conteo_por_producto.idxmax()
+
+                        confianza = round(
+                            sum([p["confidence"] for p in predictions]) / len(predictions), 2
+                        )
                     else:
                         producto = "N/A"
+                        confianza = 0
 
                     st.markdown(f"""
                     <div style="text-align:center">
-                        <h3>Detected Product</h3>
-                        <h2 style="color:#facc15;">{producto}</h2>
-                        <p>Total</p>
+                        <p style="color:#9ca3af;">Detected Product</p>
+                        <h2 style="color:#00f5ff;">{producto}</h2>
+
+                        <p style="color:#9ca3af;">Total</p>
                         <div class="metric">{conteo}</div>
+
+                        <p style="color:#9ca3af;">Confidence</p>
+                        <h3 style="color:#facc15;">{confianza}</h3>
                     </div>
                     """, unsafe_allow_html=True)
 
