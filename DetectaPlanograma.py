@@ -13,6 +13,15 @@ import base64
 st.set_page_config(page_title="AI Vision System", layout="wide")
 
 # -------------------------
+# SESSION STATE
+# -------------------------
+if "imagen" not in st.session_state:
+    st.session_state.imagen = None
+
+if "resultado" not in st.session_state:
+    st.session_state.resultado = None
+
+# -------------------------
 # FONDO
 # -------------------------
 def get_base64(file):
@@ -115,20 +124,34 @@ with col2:
 st.markdown('</div>', unsafe_allow_html=True)
 
 # -------------------------
+# MOSTRAR IMAGEN AUTOMÁTICA (🔥 FIX)
+# -------------------------
+if uploaded_file is not None:
+    st.session_state.imagen = Image.open(uploaded_file).convert("RGB")
+
+# -------------------------
+# PREVIEW (SIEMPRE)
+# -------------------------
+if st.session_state.imagen is not None:
+
+    st.markdown('<div style="margin-left:60px; margin-top:30px;">', unsafe_allow_html=True)
+
+    st.image(st.session_state.imagen, width=420)
+
+    st.markdown('</div>', unsafe_allow_html=True)
+
+# -------------------------
 # BOTÓN ANALIZAR
 # -------------------------
 if st.button("🚀 Analizar"):
 
-    if uploaded_file is None:
+    if st.session_state.imagen is None:
         st.warning("Sube una imagen primero")
 
     else:
 
-        image = Image.open(uploaded_file).convert("RGB")
+        image = st.session_state.imagen
 
-        # -------------------------
-        # LLAMADA A ROBOFLOW
-        # -------------------------
         response = requests.post(
             MODEL_URL,
             params={"api_key": API_KEY},
@@ -162,7 +185,7 @@ if st.button("🚀 Analizar"):
             draw.rectangle([x1,y1,x2,y2], outline="lime", width=3)
 
         # -------------------------
-        # MOSTRAR RESULTADOS
+        # RESULTADOS
         # -------------------------
         col1, col2 = st.columns([1.2,1])
 
@@ -171,22 +194,22 @@ if st.button("🚀 Analizar"):
 
         with col2:
             st.markdown(f"""
-            <div style="margin-left:70px; margin-top:30px;">
+            <div style="margin-left:120px; margin-top:10px; line-height:1.2;">
 
-            <p style="color:#9ca3af;">Producto</p>
-            <h2 style="color:white; font-size:28px">{producto}</h2>
+            <p style="color:#9ca3af; margin-bottom:2px;">Producto</p>
+            <h2 style="color:white; font-size:28px; margin-top:0;">{producto}</h2>
 
-            <p style="color:#9ca3af;">Total</p>
-            <h1 style="color:#facc15;font-size:28px">{conteo}</h1>
+            <p style="color:#9ca3af; margin-bottom:2px;">Total</p>
+            <h1 style="color:#facc15; font-size:50px; margin-top:0;">{conteo}</h1>
 
-            <p style="color:#9ca3af;">Confianza</p>
-            <h3 style="color:lime;font-size:18px">{confianza}</h3>
+            <p style="color:#9ca3af; margin-bottom:2px;">Confianza</p>
+            <h3 style="color:lime; font-size:22px; margin-top:0;">{confianza}</h3>
 
             </div>
             """, unsafe_allow_html=True)
 
         # -------------------------
-        # GUARDAR EN SHEETS
+        # GUARDAR
         # -------------------------
         fecha = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         sheet.append_row([tienda, fecha, producto, conteo])
