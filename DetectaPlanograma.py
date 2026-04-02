@@ -13,7 +13,7 @@ import base64
 st.set_page_config(page_title="AI Vision System", layout="wide")
 
 # -------------------------
-# FONDO (TU IMAGEN)
+# FONDO
 # -------------------------
 def get_base64(file):
     with open(file, "rb") as f:
@@ -22,7 +22,7 @@ def get_base64(file):
 img_base64 = get_base64("fondo.png")
 
 # -------------------------
-# CSS COMPLETO (TODO JUNTO)
+# CSS COMPLETO
 # -------------------------
 st.markdown(f"""
 <style>
@@ -35,7 +35,7 @@ st.markdown(f"""
     background-repeat: no-repeat;
 }}
 
-/* ❌ ELIMINAR CAPAS GRISES */
+/* ❌ ELIMINAR GRIS */
 .main {{
     background-color: transparent !important;
 }}
@@ -54,34 +54,34 @@ html, body {{
     color: white;
 }}
 
-/* INPUT TRANSPARENTE */
-div[data-baseweb="input"] > div {{
+/* 🔥 INPUT REAL TRANSPARENTE */
+div[data-baseweb="base-input"] {{
     background-color: transparent !important;
+    border: 1px solid rgba(0,255,255,0.6);
+    border-radius: 8px;
+    backdrop-filter: blur(4px);
 }}
 
-div[data-baseweb="input"] input {{
+div[data-baseweb="base-input"] input {{
     background-color: transparent !important;
     color: white !important;
 }}
 
-/* BORDE INPUT */
-div[data-baseweb="input"] {{
-    border: 1px solid rgba(0,255,255,0.5);
-    border-radius: 8px;
-}}
-
 /* FILE UPLOADER */
 [data-testid="stFileUploader"] {{
-    background: rgba(0,0,0,0.4);
+    background: rgba(0,0,0,0.2);
     border: 1px solid rgba(0,255,255,0.4);
     border-radius: 10px;
+    backdrop-filter: blur(6px);
 }}
 
-/* BOTÓN */
+/* BOTÓN PRO */
 .stButton>button {{
     background: linear-gradient(90deg, #facc15, #00f5ff);
-    border-radius: 10px;
-    height: 40px;
+    border-radius: 12px;
+    height: 45px;
+    font-weight: bold;
+    box-shadow: 0 0 15px rgba(0,255,255,0.5);
 }}
 
 /* SCANNER */
@@ -111,9 +111,13 @@ div[data-baseweb="input"] {{
 # HEADER
 # -------------------------
 st.markdown("""
-<div style="margin-top:120px; margin-left:40px;">
-<h2 style='color:#00f5ff;'>🤖 Category Management - AI Vision System</h2>
-<p style='color:#9ca3af;'>Smart detection. Real-time insights.</p>
+<div style="margin-top:180px; margin-left:60px;">
+<h2 style='color:#00f5ff; font-size:32px;'>
+🤖 Category Management - AI Vision System
+</h2>
+<p style='color:#9ca3af; font-size:14px;'>
+Smart detection. Real-time insights.
+</p>
 </div>
 """, unsafe_allow_html=True)
 
@@ -140,9 +144,9 @@ client = gspread.authorize(creds)
 sheet = client.open_by_key("1ulcTkLd4iG36zZYV4wSplQaLmixXdjPlOKPcyeTdAHc").worksheet("Hoja 1")
 
 # -------------------------
-# INPUTS (ALINEADOS)
+# INPUTS
 # -------------------------
-st.markdown('<div style="margin-left:40px; max-width:900px;">', unsafe_allow_html=True)
+st.markdown('<div style="margin-left:60px; max-width:900px;">', unsafe_allow_html=True)
 
 col1, col2 = st.columns([1,1])
 
