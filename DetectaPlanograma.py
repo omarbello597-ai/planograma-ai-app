@@ -102,10 +102,18 @@ input {{
 # HEADER
 # -------------------------
 st.markdown("""
-<h2 style='color:#00f5ff;'>🤖 Category Management - AI Vision System</h2>
-<p style='color:#9ca3af;'>Smart detection. Real-time insights.</p>
-""", unsafe_allow_html=True)
+<div style="margin-top:120px; margin-left:40px;">
 
+<h2 style='color:#00f5ff;'>
+🤖 Category Management - AI Vision System
+</h2>
+
+<p style='color:#9ca3af;'>
+Smart detection. Real-time insights.
+</p>
+
+</div>
+""", unsafe_allow_html=True)
 # -------------------------
 # API
 # -------------------------
@@ -131,6 +139,14 @@ sheet = client.open_by_key("1ulcTkLd4iG36zZYV4wSplQaLmixXdjPlOKPcyeTdAHc").works
 # -------------------------
 # INPUTS
 # -------------------------
+st.markdown("""
+<div style="
+    margin-top:40px;
+    margin-left:40px;
+    max-width:900px;
+">
+""", unsafe_allow_html=True)
+
 col1, col2 = st.columns([1,1])
 
 with col1:
@@ -138,6 +154,8 @@ with col1:
 
 with col2:
     uploaded_file = st.file_uploader("📸 Imagen", type=["jpg","png","jpeg"])
+
+st.markdown("</div>", unsafe_allow_html=True)
 
 # -------------------------
 # FUNCION BOUNDING BOXES
