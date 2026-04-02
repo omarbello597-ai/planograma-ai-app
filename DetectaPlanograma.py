@@ -46,10 +46,12 @@ st.title("📸 Detector de Planograma")
 
 tienda = st.text_input("Nombre de la tienda")
 
-uploaded_file = st.file_uploader("Sube una imagen", type=["jpg", "png", "jpeg"])
+uploaded_file = st.file_uploader("Sube una imagen", type=["jpg", "png", "jpeg","heic","heif"])
 
 if uploaded_file is not None:
     image = Image.open(uploaded_file)
+    # 🔥 FIX PARA IPHONE / HEIC
+    image = image.convert("RGB")
     st.image(image, caption="Imagen cargada", use_column_width=True)
 
     if st.button("Analizar"):
@@ -60,7 +62,7 @@ if uploaded_file is not None:
                 response = requests.post(
                     MODEL_URL,
                     params={"api_key": API_KEY},
-                    files={"file": uploaded_file.getvalue()}
+                    files={"file": ("image.jpg", uploaded_file.getvalue(), "image/jpeg")}
                 )
 
                 data = response.json()
