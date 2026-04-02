@@ -13,7 +13,7 @@ import base64
 st.set_page_config(page_title="AI Vision System", layout="wide")
 
 # -------------------------
-# 🔥 FONDO CON TU IMAGEN (SIN GRIS)
+# FONDO (TU IMAGEN)
 # -------------------------
 def get_base64(file):
     with open(file, "rb") as f:
@@ -21,10 +21,13 @@ def get_base64(file):
 
 img_base64 = get_base64("fondo.png")
 
+# -------------------------
+# CSS COMPLETO (TODO JUNTO)
+# -------------------------
 st.markdown(f"""
 <style>
 
-/* 🌌 FONDO REAL */
+/* 🌌 FONDO */
 [data-testid="stAppViewContainer"] {{
     background: url("data:image/png;base64,{img_base64}");
     background-size: cover;
@@ -32,7 +35,7 @@ st.markdown(f"""
     background-repeat: no-repeat;
 }}
 
-/* 🔥 ELIMINAR CAPAS GRISES */
+/* ❌ ELIMINAR CAPAS GRISES */
 .main {{
     background-color: transparent !important;
 }}
@@ -46,52 +49,42 @@ st.markdown(f"""
     background: transparent;
 }}
 
-/* Texto */
+/* TEXTO */
 html, body {{
     color: white;
 }}
 
 /* INPUT TRANSPARENTE */
-div[data-baseweb="input"] > div {
+div[data-baseweb="input"] > div {{
     background-color: transparent !important;
-}
+}}
 
-div[data-baseweb="input"] input {
+div[data-baseweb="input"] input {{
     background-color: transparent !important;
-    color: white !important;
-}
-
-/* BORDE FUTURISTA */
-div[data-baseweb="input"] {
-    border: 1px solid rgba(0,255,255,0.5);
-    border-radius: 8px;
-}
-
-/* Inputs más finos */
-input {{
-    height: 35px !important;
-    font-size: 14px !important;
-    background: rgba(0,0,0,0.4) !important;
-    border: 1px solid rgba(0,255,255,0.4) !important;
     color: white !important;
 }}
 
-/* File uploader */
+/* BORDE INPUT */
+div[data-baseweb="input"] {{
+    border: 1px solid rgba(0,255,255,0.5);
+    border-radius: 8px;
+}}
+
+/* FILE UPLOADER */
 [data-testid="stFileUploader"] {{
     background: rgba(0,0,0,0.4);
     border: 1px solid rgba(0,255,255,0.4);
     border-radius: 10px;
 }}
 
-/* Botón */
+/* BOTÓN */
 .stButton>button {{
     background: linear-gradient(90deg, #facc15, #00f5ff);
     border-radius: 10px;
     height: 40px;
-    font-size: 14px;
 }}
 
-/* 🟢 SCANNER SOBRE IMAGEN */
+/* SCANNER */
 .scan-container {{
     position: relative;
     display: inline-block;
@@ -119,17 +112,11 @@ input {{
 # -------------------------
 st.markdown("""
 <div style="margin-top:120px; margin-left:40px;">
-
-<h2 style='color:#00f5ff;'>
-🤖 Category Management - AI Vision System
-</h2>
-
-<p style='color:#9ca3af;'>
-Smart detection. Real-time insights.
-</p>
-
+<h2 style='color:#00f5ff;'>🤖 Category Management - AI Vision System</h2>
+<p style='color:#9ca3af;'>Smart detection. Real-time insights.</p>
 </div>
 """, unsafe_allow_html=True)
+
 # -------------------------
 # API
 # -------------------------
@@ -153,15 +140,9 @@ client = gspread.authorize(creds)
 sheet = client.open_by_key("1ulcTkLd4iG36zZYV4wSplQaLmixXdjPlOKPcyeTdAHc").worksheet("Hoja 1")
 
 # -------------------------
-# INPUTS
+# INPUTS (ALINEADOS)
 # -------------------------
-st.markdown("""
-<div style="
-    margin-top:40px;
-    margin-left:40px;
-    max-width:900px;
-">
-""", unsafe_allow_html=True)
+st.markdown('<div style="margin-left:40px; max-width:900px;">', unsafe_allow_html=True)
 
 col1, col2 = st.columns([1,1])
 
@@ -171,10 +152,10 @@ with col1:
 with col2:
     uploaded_file = st.file_uploader("📸 Imagen", type=["jpg","png","jpeg"])
 
-st.markdown("</div>", unsafe_allow_html=True)
+st.markdown('</div>', unsafe_allow_html=True)
 
 # -------------------------
-# FUNCION BOUNDING BOXES
+# FUNCION CAJAS
 # -------------------------
 def dibujar_cajas(image, predictions):
     draw = ImageDraw.Draw(image)
@@ -221,14 +202,14 @@ if uploaded_file:
 
             image_boxes = dibujar_cajas(image.copy(), predictions)
 
-            # 🖼️ IMAGEN + SCANNER
+            # IMAGEN + SCANNER
             with col1:
                 st.markdown('<div class="scan-container">', unsafe_allow_html=True)
                 st.image(image_boxes, width=500)
                 st.markdown('<div class="scan-line"></div>', unsafe_allow_html=True)
                 st.markdown('</div>', unsafe_allow_html=True)
 
-            # 📊 RESULTADOS
+            # RESULTADOS
             with col2:
 
                 if predictions:
