@@ -7,6 +7,7 @@ import gspread
 from google.oauth2.service_account import Credentials
 import base64
 from io import BytesIO
+import time
 
 # -------------------------
 # CONFIG
@@ -28,6 +29,38 @@ if "image_pil" not in st.session_state:
 MAPEO_PRODUCTOS = {
     "simoniz_verde": "Refrigerante Galón verde Simoniz"
 }
+
+# -------------------------
+# SCANNER (🔥 NUEVO)
+# -------------------------
+def mostrar_scanner():
+    st.markdown("""
+    <style>
+    .scanner-container {
+        position: relative;
+        width: 350px;
+        height: 350px;
+    }
+
+    .scanner-line {
+        position: absolute;
+        width: 100%;
+        height: 3px;
+        background: lime;
+        box-shadow: 0 0 10px lime;
+        animation: scan 2s linear infinite;
+    }
+
+    @keyframes scan {
+        0% { top: 0; }
+        100% { top: 100%; }
+    }
+    </style>
+
+    <div class="scanner-container">
+        <div class="scanner-line"></div>
+    </div>
+    """, unsafe_allow_html=True)
 
 # -------------------------
 # PROCESAR IMAGEN
@@ -129,7 +162,7 @@ if uploaded_file is not None:
         st.session_state.image_bytes = image_bytes
 
 # -------------------------
-# PLACEHOLDER (🔥 CLAVE)
+# PLACEHOLDER
 # -------------------------
 image_placeholder = st.empty()
 
@@ -146,78 +179,86 @@ if st.button("🚀 Analizar"):
 
     else:
 
-        with st.spinner("Analizando..."):
+        # 🔥 SCANNER ANTES DEL ANÁLISIS
+        with st.spinner("Escaneando productos..."):
 
-            response = requests.post(
-                MODEL_URL,
-                params={"api_key": API_KEY},
-                files={
-                    "file": ("image.jpg", st.session_state.image_bytes, "image/jpeg")
-                }
+            image_placeholder.image(st.session_state.image_pil, width=350)
+            mostrar_scanner()
+            time.sleep(2)
+
+        # -------------------------
+        # LLAMADA API
+        # -------------------------
+        response = requests.post(
+            MODEL_URL,
+            params={"api_key": API_KEY},
+            files={
+                "file": ("image.jpg", st.session_state.image_bytes, "image/jpeg")
+            }
+        )
+
+        data = response.json()
+        predictions = data.get("predictions", [])
+
+        conteo = len(predictions)
+
+        if conteo > 0:
+            productos = [
+                MAPEO_PRODUCTOS.get(p["class"], p["class"])
+                for p in predictions
+            ]
+            producto = pd.Series(productos).value_counts().idxmax()
+
+            confianza = round(
+                sum([p["confidence"] for p in predictions]) / conteo, 2
             )
+        else:
+            producto = "No detectado"
+            confianza = 0
 
-            data = response.json()
-            predictions = data.get("predictions", [])
+        # -------------------------
+        # DIBUJAR CAJAS
+        # -------------------------
+        img = st.session_state.image_pil.copy()
+        draw = ImageDraw.Draw(img)
 
-            conteo = len(predictions)
+        for p in predictions:
+            x, y, w, h = p["x"], p["y"], p["width"], p["height"]
 
-            if conteo > 0:
-                productos = [
-                    MAPEO_PRODUCTOS.get(p["class"], p["class"])
-                    for p in predictions
-                ]
-                producto = pd.Series(productos).value_counts().idxmax()
+            x1, y1 = x - w/2, y - h/2
+            x2, y2 = x + w/2, y + h/2
 
-                confianza = round(
-                    sum([p["confidence"] for p in predictions]) / conteo, 2
-                )
-            else:
-                producto = "No detectado"
-                confianza = 0
+            clase = p["class"]
+            nombre = MAPEO_PRODUCTOS.get(clase, clase)
 
-            # -------------------------
-            # DIBUJAR CAJAS
-            # -------------------------
-            img = st.session_state.image_pil.copy()
-            draw = ImageDraw.Draw(img)
+            draw.rectangle([x1, y1, x2, y2], outline="lime", width=3)
+            draw.text((x1, y1 - 15), nombre, fill="lime")
 
-            for p in predictions:
-                x, y, w, h = p["x"], p["y"], p["width"], p["height"]
+        # 🔥 REEMPLAZA IMAGEN
+        image_placeholder.image(img, width=350)
 
-                x1, y1 = x - w/2, y - h/2
-                x2, y2 = x + w/2, y + h/2
+        # -------------------------
+        # RESULTADOS
+        # -------------------------
+        st.markdown(f"""
+        <div style="margin-left:400px; margin-top:-300px;">
 
-                clase = p["class"]
-                nombre = MAPEO_PRODUCTOS.get(clase, clase)
+        <p>Producto</p>
+        <h3>{producto}</h3>
 
-                draw.rectangle([x1, y1, x2, y2], outline="lime", width=3)
-                draw.text((x1, y1 - 15), nombre, fill="lime")
+        <p>Total</p>
+        <h1 style="color:#facc15;">{conteo}</h1>
 
-            # 🔥 REEMPLAZA IMAGEN (NO DUPLICA)
-            image_placeholder.image(img, width=350)
+        <p>Confianza</p>
+        <h3 style="color:lime;">{confianza}</h3>
 
-            # -------------------------
-            # RESULTADOS
-            # -------------------------
-            st.markdown(f"""
-            <div style="margin-left:400px; margin-top:-300px;">
+        </div>
+        """, unsafe_allow_html=True)
 
-            <p>Producto</p>
-            <h3>{producto}</h3>
+        # -------------------------
+        # GUARDAR
+        # -------------------------
+        fecha = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        sheet.append_row([tienda, fecha, producto, conteo])
 
-            <p>Total</p>
-            <h1 style="color:#facc15;">{conteo}</h1>
-
-            <p>Confianza</p>
-            <h3 style="color:lime;">{confianza}</h3>
-
-            </div>
-            """, unsafe_allow_html=True)
-
-            # -------------------------
-            # GUARDAR
-            # -------------------------
-            fecha = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            sheet.append_row([tienda, fecha, producto, conteo])
-
-            st.success("✅ Guardado correctamente")
+        st.success("✅ Guardado correctamente")
