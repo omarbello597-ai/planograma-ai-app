@@ -31,39 +31,70 @@ MAPEO_PRODUCTOS = {
 }
 
 # -------------------------
-# SCANNER RADAR (🔥 NUEVO)
+# SCANNER OVERLAY + SONIDO
 # -------------------------
-def mostrar_scanner(image_placeholder):
+def mostrar_scanner_overlay(image, image_placeholder):
 
-    radar_html = """
+    # Imagen a base64
+    buffer = BytesIO()
+    image.save(buffer, format="JPEG")
+    img_base64 = base64.b64encode(buffer.getvalue()).decode()
+
+    # Sonido
+    with open("scan.mp3", "rb") as f:
+        audio_bytes = f.read()
+
+    audio_base64 = base64.b64encode(audio_bytes).decode()
+
+    html = f"""
     <style>
-    .radar-container {
+    .container {{
         position: relative;
         width: 350px;
-        height: 350px;
-    }
+    }}
 
-    .radar-line {
+    .container img {{
+        width: 100%;
+        border-radius: 10px;
+    }}
+
+    .radar {{
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        pointer-events: none;
+    }}
+
+    .radar-line {{
         position: absolute;
         width: 100%;
         height: 100%;
-        background: linear-gradient(90deg, transparent, rgba(0,255,0,0.6));
+        background: linear-gradient(90deg, transparent, rgba(0,255,0,0.5));
         transform-origin: center;
         animation: radar 1.5s linear forwards;
-    }
+    }}
 
-    @keyframes radar {
-        0% { transform: rotate(0deg); }
-        100% { transform: rotate(180deg); }
-    }
+    @keyframes radar {{
+        0% {{ transform: rotate(0deg); }}
+        100% {{ transform: rotate(180deg); }}
+    }}
     </style>
 
-    <div class="radar-container">
-        <div class="radar-line"></div>
+    <div class="container">
+        <img src="data:image/jpeg;base64,{img_base64}">
+        <div class="radar">
+            <div class="radar-line"></div>
+        </div>
     </div>
+
+    <audio autoplay>
+        <source src="data:audio/mp3;base64,{audio_base64}" type="audio/mp3">
+    </audio>
     """
 
-    image_placeholder.markdown(radar_html, unsafe_allow_html=True)
+    image_placeholder.markdown(html, unsafe_allow_html=True)
 
 # -------------------------
 # PROCESAR IMAGEN
@@ -182,11 +213,8 @@ if st.button("🚀 Analizar"):
 
     else:
 
-        # -------------------------
-        # SCANNER RADAR
-        # -------------------------
-        image_placeholder.image(st.session_state.image_pil, width=350)
-        mostrar_scanner(image_placeholder)
+        # 🔥 SCANNER OVERLAY
+        mostrar_scanner_overlay(st.session_state.image_pil, image_placeholder)
         time.sleep(1.5)
 
         # -------------------------
@@ -237,7 +265,7 @@ if st.button("🚀 Analizar"):
             draw.rectangle([x1, y1, x2, y2], outline="lime", width=3)
             draw.text((x1, y1 - 15), nombre, fill="lime")
 
-        # 🔥 REEMPLAZA IMAGEN FINAL
+        # 🔥 RESULTADO FINAL
         image_placeholder.image(img, width=350)
 
         # -------------------------
