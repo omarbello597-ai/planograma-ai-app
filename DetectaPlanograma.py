@@ -83,9 +83,7 @@ html, body {{
 # -------------------------
 # HEADER
 # -------------------------
-st.markdown("""
-<h2 style='color:#00f5ff;'>🤖 AI Vision System</h2>
-""", unsafe_allow_html=True)
+st.markdown("<h2 style='color:#00f5ff;'>🤖 AI Vision System</h2>", unsafe_allow_html=True)
 
 # -------------------------
 # API
@@ -131,10 +129,12 @@ if uploaded_file is not None:
         st.session_state.image_bytes = image_bytes
 
 # -------------------------
-# PREVIEW
+# PLACEHOLDER (🔥 CLAVE)
 # -------------------------
+image_placeholder = st.empty()
+
 if st.session_state.image_pil is not None:
-    st.image(st.session_state.image_pil, width=350)
+    image_placeholder.image(st.session_state.image_pil, width=350)
 
 # -------------------------
 # BOTÓN ANALIZAR
@@ -176,7 +176,7 @@ if st.button("🚀 Analizar"):
                 confianza = 0
 
             # -------------------------
-            # DIBUJAR CAJAS + TEXTO
+            # DIBUJAR CAJAS
             # -------------------------
             img = st.session_state.image_pil.copy()
             draw = ImageDraw.Draw(img)
@@ -193,29 +193,26 @@ if st.button("🚀 Analizar"):
                 draw.rectangle([x1, y1, x2, y2], outline="lime", width=3)
                 draw.text((x1, y1 - 15), nombre, fill="lime")
 
+            # 🔥 REEMPLAZA IMAGEN (NO DUPLICA)
+            image_placeholder.image(img, width=350)
+
             # -------------------------
-            # MOSTRAR RESULTADO
+            # RESULTADOS
             # -------------------------
-            col1, col2 = st.columns([1.2,1])
+            st.markdown(f"""
+            <div style="margin-left:400px; margin-top:-300px;">
 
-            with col1:
-                st.image(img, width=350)
+            <p>Producto</p>
+            <h3>{producto}</h3>
 
-            with col2:
-                st.markdown(f"""
-                <div style="line-height:1.2;">
+            <p>Total</p>
+            <h1 style="color:#facc15;">{conteo}</h1>
 
-                <p>Producto</p>
-                <h3>{producto}</h3>
+            <p>Confianza</p>
+            <h3 style="color:lime;">{confianza}</h3>
 
-                <p>Total</p>
-                <h1 style="color:#facc15;">{conteo}</h1>
-
-                <p>Confianza</p>
-                <h3 style="color:lime;">{confianza}</h3>
-
-                </div>
-                """, unsafe_allow_html=True)
+            </div>
+            """, unsafe_allow_html=True)
 
             # -------------------------
             # GUARDAR
