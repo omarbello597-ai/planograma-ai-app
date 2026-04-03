@@ -23,27 +23,27 @@ if "image_pil" not in st.session_state:
     st.session_state.image_pil = None
 
 # -------------------------
-# FUNCIÓN PROCESAMIENTO (🔥 CLAVE)
+# MAPEO PRODUCTOS
+# -------------------------
+MAPEO_PRODUCTOS = {
+    "simoniz_verde": "Refrigerante Galón verde Simoniz"
+}
+
+# -------------------------
+# PROCESAR IMAGEN
 # -------------------------
 def procesar_imagen(uploaded_file):
-
     try:
         file_bytes = uploaded_file.getvalue()
 
-        # Validar archivo
         if not file_bytes or len(file_bytes) < 1000:
-            st.error("⚠️ Error al cargar la imagen. Intenta nuevamente.")
+            st.error("⚠️ Error al cargar la imagen")
             return None, None
 
         image = Image.open(BytesIO(file_bytes))
-
-        # 🔥 Convertir SIEMPRE
         image = image.convert("RGB")
-
-        # 🔥 Redimensionar (clave móvil)
         image = image.resize((800, 800))
 
-        # 🔥 Convertir a JPEG optimizado
         buffer = BytesIO()
         image.save(buffer, format="JPEG", quality=85)
 
@@ -84,9 +84,7 @@ html, body {{
 # HEADER
 # -------------------------
 st.markdown("""
-<div style="margin-top:40px;">
 <h2 style='color:#00f5ff;'>🤖 AI Vision System</h2>
-</div>
 """, unsafe_allow_html=True)
 
 # -------------------------
@@ -122,7 +120,7 @@ uploaded_file = st.file_uploader(
 )
 
 # -------------------------
-# PROCESAR Y GUARDAR IMAGEN
+# PROCESAR IMAGEN
 # -------------------------
 if uploaded_file is not None:
 
@@ -133,7 +131,7 @@ if uploaded_file is not None:
         st.session_state.image_bytes = image_bytes
 
 # -------------------------
-# PREVIEW (SIEMPRE)
+# PREVIEW
 # -------------------------
 if st.session_state.image_pil is not None:
     st.image(st.session_state.image_pil, width=350)
@@ -148,49 +146,62 @@ if st.button("🚀 Analizar"):
 
     else:
 
-        with st.spinner("Analizando imagen..."):
+        with st.spinner("Analizando..."):
 
-            try:
-                response = requests.post(
-                    MODEL_URL,
-                    params={"api_key": API_KEY},
-                    files={
-                        "file": ("image.jpg", st.session_state.image_bytes, "image/jpeg")
-                    }
+            response = requests.post(
+                MODEL_URL,
+                params={"api_key": API_KEY},
+                files={
+                    "file": ("image.jpg", st.session_state.image_bytes, "image/jpeg")
+                }
+            )
+
+            data = response.json()
+            predictions = data.get("predictions", [])
+
+            conteo = len(predictions)
+
+            if conteo > 0:
+                productos = [
+                    MAPEO_PRODUCTOS.get(p["class"], p["class"])
+                    for p in predictions
+                ]
+                producto = pd.Series(productos).value_counts().idxmax()
+
+                confianza = round(
+                    sum([p["confidence"] for p in predictions]) / conteo, 2
                 )
+            else:
+                producto = "No detectado"
+                confianza = 0
 
-                data = response.json()
-                predictions = data.get("predictions", [])
+            # -------------------------
+            # DIBUJAR CAJAS + TEXTO
+            # -------------------------
+            img = st.session_state.image_pil.copy()
+            draw = ImageDraw.Draw(img)
 
-                conteo = len(predictions)
+            for p in predictions:
+                x, y, w, h = p["x"], p["y"], p["width"], p["height"]
 
-                if conteo > 0:
-                    productos = [p["class"] for p in predictions]
-                    producto = pd.Series(productos).value_counts().idxmax()
-                    confianza = round(
-                        sum([p["confidence"] for p in predictions]) / conteo, 2
-                    )
-                else:
-                    producto = "No detectado"
-                    confianza = 0
+                x1, y1 = x - w/2, y - h/2
+                x2, y2 = x + w/2, y + h/2
 
-                # -------------------------
-                # DIBUJAR CAJAS
-                # -------------------------
-                img = st.session_state.image_pil.copy()
-                draw = ImageDraw.Draw(img)
+                clase = p["class"]
+                nombre = MAPEO_PRODUCTOS.get(clase, clase)
 
-                for p in predictions:
-                    x, y, w, h = p["x"], p["y"], p["width"], p["height"]
-                    x1, y1 = x - w/2, y - h/2
-                    x2, y2 = x + w/2, y + h/2
-                    draw.rectangle([x1, y1, x2, y2], outline="lime", width=3)
+                draw.rectangle([x1, y1, x2, y2], outline="lime", width=3)
+                draw.text((x1, y1 - 15), nombre, fill="lime")
 
-                # -------------------------
-                # RESULTADOS
-                # -------------------------
+            # -------------------------
+            # MOSTRAR RESULTADO
+            # -------------------------
+            col1, col2 = st.columns([1.2,1])
+
+            with col1:
                 st.image(img, width=350)
 
+            with col2:
                 st.markdown(f"""
                 <div style="line-height:1.2;">
 
@@ -206,14 +217,10 @@ if st.button("🚀 Analizar"):
                 </div>
                 """, unsafe_allow_html=True)
 
-                # -------------------------
-                # GUARDAR
-                # -------------------------
-                fecha = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                sheet.append_row([tienda, fecha, producto, conteo])
+            # -------------------------
+            # GUARDAR
+            # -------------------------
+            fecha = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            sheet.append_row([tienda, fecha, producto, conteo])
 
-                st.success("✅ Guardado correctamente")
-
-            except Exception as e:
-                st.error("❌ Error en análisis")
-                st.write(e)
+            st.success("✅ Guardado correctamente")
