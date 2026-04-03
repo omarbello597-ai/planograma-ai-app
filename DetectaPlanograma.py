@@ -31,36 +31,39 @@ MAPEO_PRODUCTOS = {
 }
 
 # -------------------------
-# SCANNER (🔥 NUEVO)
+# SCANNER RADAR (🔥 NUEVO)
 # -------------------------
-def mostrar_scanner():
-    st.markdown("""
+def mostrar_scanner(image_placeholder):
+
+    radar_html = """
     <style>
-    .scanner-container {
+    .radar-container {
         position: relative;
         width: 350px;
         height: 350px;
     }
 
-    .scanner-line {
+    .radar-line {
         position: absolute;
         width: 100%;
-        height: 3px;
-        background: lime;
-        box-shadow: 0 0 10px lime;
-        animation: scan 2s linear infinite;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(0,255,0,0.6));
+        transform-origin: center;
+        animation: radar 1.5s linear forwards;
     }
 
-    @keyframes scan {
-        0% { top: 0; }
-        100% { top: 100%; }
+    @keyframes radar {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(180deg); }
     }
     </style>
 
-    <div class="scanner-container">
-        <div class="scanner-line"></div>
+    <div class="radar-container">
+        <div class="radar-line"></div>
     </div>
-    """, unsafe_allow_html=True)
+    """
+
+    image_placeholder.markdown(radar_html, unsafe_allow_html=True)
 
 # -------------------------
 # PROCESAR IMAGEN
@@ -179,12 +182,12 @@ if st.button("🚀 Analizar"):
 
     else:
 
-        # 🔥 SCANNER ANTES DEL ANÁLISIS
-        with st.spinner("Escaneando productos..."):
-
-            image_placeholder.image(st.session_state.image_pil, width=350)
-            mostrar_scanner()
-            time.sleep(2)
+        # -------------------------
+        # SCANNER RADAR
+        # -------------------------
+        image_placeholder.image(st.session_state.image_pil, width=350)
+        mostrar_scanner(image_placeholder)
+        time.sleep(1.5)
 
         # -------------------------
         # LLAMADA API
@@ -234,7 +237,7 @@ if st.button("🚀 Analizar"):
             draw.rectangle([x1, y1, x2, y2], outline="lime", width=3)
             draw.text((x1, y1 - 15), nombre, fill="lime")
 
-        # 🔥 REEMPLAZA IMAGEN
+        # 🔥 REEMPLAZA IMAGEN FINAL
         image_placeholder.image(img, width=350)
 
         # -------------------------
