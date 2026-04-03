@@ -8,6 +8,7 @@ from google.oauth2.service_account import Credentials
 import base64
 from io import BytesIO
 import time
+import io
 
 # -------------------------
 # CONFIG
@@ -31,7 +32,7 @@ MAPEO_PRODUCTOS = {
 }
 
 # -------------------------
-# SCANNER NIVEL NASA 🚀
+# SCANNER NIVEL NASA
 # -------------------------
 def mostrar_scanner_overlay(image, image_placeholder):
 
@@ -61,7 +62,6 @@ def mostrar_scanner_overlay(image, image_placeholder):
         overflow: hidden;
     }}
 
-    /* Círculo radar */
     .radar::before {{
         content: "";
         position: absolute;
@@ -71,7 +71,6 @@ def mostrar_scanner_overlay(image, image_placeholder):
         border: 2px solid rgba(0,255,0,0.3);
     }}
 
-    /* Línea de barrido */
     .radar-sweep {{
         position: absolute;
         width: 100%;
@@ -85,7 +84,6 @@ def mostrar_scanner_overlay(image, image_placeholder):
         animation: radarRotate 2s linear forwards;
     }}
 
-    /* Glow central */
     .radar::after {{
         content: "";
         position: absolute;
@@ -100,12 +98,8 @@ def mostrar_scanner_overlay(image, image_placeholder):
     }}
 
     @keyframes radarRotate {{
-        from {{
-            transform: rotate(0deg);
-        }}
-        to {{
-            transform: rotate(360deg);
-        }}
+        from {{ transform: rotate(0deg); }}
+        to {{ transform: rotate(360deg); }}
     }}
     </style>
 
@@ -143,6 +137,41 @@ def procesar_imagen(uploaded_file):
         st.error("❌ Error procesando imagen")
         st.write(e)
         return None, None
+
+# -------------------------
+# GOOGLE DRIVE (NUEVO)
+# -------------------------
+from googleapiclient.discovery import build
+from googleapiclient.http import MediaIoBaseUpload
+
+def subir_imagen_drive(image, nombre_archivo):
+
+    try:
+        drive_service = build("drive", "v3", credentials=creds)
+
+        buffer = io.BytesIO()
+        image.save(buffer, format="JPEG")
+        buffer.seek(0)
+
+        file_metadata = {
+            "name": nombre_archivo,
+            "mimeType": "image/jpeg"
+        }
+
+        media = MediaIoBaseUpload(buffer, mimetype="image/jpeg")
+
+        file = drive_service.files().create(
+            body=file_metadata,
+            media_body=media,
+            fields="id"
+        ).execute()
+
+        return file.get("id")
+
+    except Exception as e:
+        st.error("Error subiendo imagen a Drive")
+        st.write(e)
+        return None
 
 # -------------------------
 # FONDO
@@ -201,6 +230,7 @@ sheet = client.open_by_key("1ulcTkLd4iG36zZYV4wSplQaLmixXdjPlOKPcyeTdAHc").works
 # INPUTS
 # -------------------------
 tienda = st.text_input("🏪 Nombre de la tienda")
+mercaderista = st.text_input("👤 Nombre del mercaderista")
 
 uploaded_file = st.file_uploader(
     "📸 Toma o sube una foto",
@@ -236,13 +266,9 @@ if st.button("🚀 Analizar"):
 
     else:
 
-        # 🚀 SCANNER NIVEL NASA
         mostrar_scanner_overlay(st.session_state.image_pil, image_placeholder)
         time.sleep(2)
 
-        # -------------------------
-        # LLAMADA API
-        # -------------------------
         response = requests.post(
             MODEL_URL,
             params={"api_key": API_KEY},
@@ -270,9 +296,6 @@ if st.button("🚀 Analizar"):
             producto = "No detectado"
             confianza = 0
 
-        # -------------------------
-        # DIBUJAR CAJAS
-        # -------------------------
         img = st.session_state.image_pil.copy()
         draw = ImageDraw.Draw(img)
 
@@ -288,31 +311,25 @@ if st.button("🚀 Analizar"):
             draw.rectangle([x1, y1, x2, y2], outline="lime", width=3)
             draw.text((x1, y1 - 15), nombre, fill="lime")
 
-        # RESULTADO FINAL
         image_placeholder.image(img, width=350)
 
         # -------------------------
-        # RESULTADOS
+        # GUARDAR IMAGEN + DATOS (🔥 NUEVO)
         # -------------------------
-        st.markdown(f"""
-        <div style="margin-left:400px; margin-top:-300px;">
+        fecha = datetime.now().strftime("%Y%m%d_%H%M%S")
+        nombre_archivo = f"{tienda}_{fecha}.jpg"
 
-        <p>Producto</p>
-        <h3>{producto}</h3>
+        file_id = subir_imagen_drive(st.session_state.image_pil, nombre_archivo)
 
-        <p>Total</p>
-        <h1 style="color:#facc15;">{conteo}</h1>
+        link = f"https://drive.google.com/file/d/{file_id}/view" if file_id else ""
 
-        <p>Confianza</p>
-        <h3 style="color:lime;">{confianza}</h3>
+        sheet.append_row([
+            tienda,
+            fecha,
+            producto,
+            conteo,
+            mercaderista,
+            link
+        ])
 
-        </div>
-        """, unsafe_allow_html=True)
-
-        # -------------------------
-        # GUARDAR
-        # -------------------------
-        fecha = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        sheet.append_row([tienda, fecha, producto, conteo])
-
-        st.success("✅ Guardado correctamente")
+        st.success("✅ Guardado correctamente con imagen")
