@@ -31,20 +31,13 @@ MAPEO_PRODUCTOS = {
 }
 
 # -------------------------
-# SCANNER OVERLAY + SONIDO
+# SCANNER NIVEL NASA 🚀
 # -------------------------
 def mostrar_scanner_overlay(image, image_placeholder):
 
-    # Imagen a base64
     buffer = BytesIO()
     image.save(buffer, format="JPEG")
     img_base64 = base64.b64encode(buffer.getvalue()).decode()
-
-    # Sonido
-    with open("scan.mp3", "rb") as f:
-        audio_bytes = f.read()
-
-    audio_base64 = base64.b64encode(audio_bytes).decode()
 
     html = f"""
     <style>
@@ -64,34 +57,64 @@ def mostrar_scanner_overlay(image, image_placeholder):
         left: 0;
         width: 100%;
         height: 100%;
-        pointer-events: none;
+        border-radius: 10px;
+        overflow: hidden;
     }}
 
-    .radar-line {{
+    /* Círculo radar */
+    .radar::before {{
+        content: "";
         position: absolute;
         width: 100%;
         height: 100%;
-        background: linear-gradient(90deg, transparent, rgba(0,255,0,0.5));
-        transform-origin: center;
-        animation: radar 1.5s linear forwards;
+        border-radius: 50%;
+        border: 2px solid rgba(0,255,0,0.3);
     }}
 
-    @keyframes radar {{
-        0% {{ transform: rotate(0deg); }}
-        100% {{ transform: rotate(180deg); }}
+    /* Línea de barrido */
+    .radar-sweep {{
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        background: conic-gradient(
+            rgba(0,255,0,0.4) 0deg,
+            rgba(0,255,0,0.1) 30deg,
+            transparent 60deg
+        );
+        border-radius: 50%;
+        animation: radarRotate 2s linear forwards;
+    }}
+
+    /* Glow central */
+    .radar::after {{
+        content: "";
+        position: absolute;
+        width: 10px;
+        height: 10px;
+        background: lime;
+        border-radius: 50%;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        box-shadow: 0 0 20px lime;
+    }}
+
+    @keyframes radarRotate {{
+        from {{
+            transform: rotate(0deg);
+        }}
+        to {{
+            transform: rotate(360deg);
+        }}
     }}
     </style>
 
     <div class="container">
         <img src="data:image/jpeg;base64,{img_base64}">
         <div class="radar">
-            <div class="radar-line"></div>
+            <div class="radar-sweep"></div>
         </div>
     </div>
-
-    <audio autoplay>
-        <source src="data:audio/mp3;base64,{audio_base64}" type="audio/mp3">
-    </audio>
     """
 
     image_placeholder.markdown(html, unsafe_allow_html=True)
@@ -213,9 +236,9 @@ if st.button("🚀 Analizar"):
 
     else:
 
-        # 🔥 SCANNER OVERLAY
+        # 🚀 SCANNER NIVEL NASA
         mostrar_scanner_overlay(st.session_state.image_pil, image_placeholder)
-        time.sleep(1.5)
+        time.sleep(2)
 
         # -------------------------
         # LLAMADA API
@@ -265,7 +288,7 @@ if st.button("🚀 Analizar"):
             draw.rectangle([x1, y1, x2, y2], outline="lime", width=3)
             draw.text((x1, y1 - 15), nombre, fill="lime")
 
-        # 🔥 RESULTADO FINAL
+        # RESULTADO FINAL
         image_placeholder.image(img, width=350)
 
         # -------------------------
