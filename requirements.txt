@@ -8,3 +8,7 @@ numpy
 openpyxl
 matplotlib
 scipy
+google-api-python-client
+google-auth
+google-auth-httplib2
+google-auth-oauthlib
