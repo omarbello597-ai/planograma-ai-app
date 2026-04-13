@@ -74,11 +74,8 @@ def subir_imagen_cloudinary(image_pil, nombre_archivo):
         return None
 
 # -------------------------
-# SCANNER VISUAL
+# SCANNER VISUAL (RADAR)
 # -------------------------
-# def mostrar_scanner_overlay(image, image_placeholder):
- #   image_placeholder.image(image, width=350)
-# Mostrar radar
 def mostrar_scanner_overlay(image):
     import base64
     from io import BytesIO
@@ -103,7 +100,6 @@ def mostrar_scanner_overlay(image):
             overflow:hidden;
         ">
 
-            <!-- Glow IA -->
             <div style="
                 position:absolute;
                 width:100%;
@@ -112,7 +108,6 @@ def mostrar_scanner_overlay(image):
                 animation: pulse 1.5s infinite;
             "></div>
 
-            <!-- Línea radar -->
             <div style="
                 position:absolute;
                 top:0;
@@ -203,10 +198,10 @@ if st.button("🚀 Analizar"):
 
     else:
 
-        # 🟢 1. Mostrar radar
+        # 🟢 1. Radar
         mostrar_scanner_overlay(st.session_state.image_pil)
 
-        # ⏳ 2. Pausa para que se vea
+        # ⏳ 2. Pausa visual
         time.sleep(2)
 
         # 🧠 3. Llamar modelo
@@ -222,6 +217,16 @@ if st.button("🚀 Analizar"):
         predictions = data.get("predictions", [])
 
         conteo = len(predictions)
+
+        # 🔥 DEFINIR PRODUCTO (FIX ERROR)
+        if conteo > 0:
+            productos = [
+                MAPEO_PRODUCTOS.get(p["class"], p["class"])
+                for p in predictions
+            ]
+            producto = pd.Series(productos).value_counts().idxmax()
+        else:
+            producto = "No detectado"
 
         # 🟩 4. Dibujar resultados
         img = st.session_state.image_pil.copy()
@@ -239,10 +244,10 @@ if st.button("🚀 Analizar"):
             draw.rectangle([x1, y1, x2, y2], outline="lime", width=3)
             draw.text((x1, y1 - 15), nombre, fill="lime")
 
-        # 🟩 5. Mostrar resultado final
+        # 🟩 5. Mostrar resultado
         image_placeholder.image(img, width=350)
 
-        # 📊 6. Mostrar conteo
+        # 📊 6. Resultado
         st.success(f"🔍 Se detectaron {conteo} Refrigerantes verdes Simoniz")
 
         # -------------------------
@@ -251,7 +256,6 @@ if st.button("🚀 Analizar"):
         fecha = datetime.now().strftime("%Y%m%d_%H%M%S")
         nombre_archivo = f"{tienda}_{fecha}"
 
-        # 🔥 Subir a Cloudinary
         link = subir_imagen_cloudinary(img, nombre_archivo)
 
         sheet.append_row([
