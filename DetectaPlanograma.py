@@ -76,8 +76,73 @@ def subir_imagen_cloudinary(image_pil, nombre_archivo):
 # -------------------------
 # SCANNER VISUAL
 # -------------------------
+# def mostrar_scanner_overlay(image, image_placeholder):
+ #   image_placeholder.image(image, width=350)
+# -------------------------
+# SCANNER VISUAL
+# -------------------------
 def mostrar_scanner_overlay(image, image_placeholder):
-    image_placeholder.image(image, width=350)
+    import base64
+    from io import BytesIO
+
+    buffer = BytesIO()
+    image.save(buffer, format="JPEG")
+    img_base64 = base64.b64encode(buffer.getvalue()).decode()
+
+    html = f"""
+    <div style="position: relative; width: 350px;">
+        <img src="data:image/jpeg;base64,{img_base64}" 
+             style="width:100%; border-radius:10px; display:block;"/>
+
+        <div style="
+            position:absolute;
+            top:0;
+            left:0;
+            width:100%;
+            height:100%;
+            border-radius:10px;
+            overflow:hidden;
+            pointer-events:none;
+        ">
+
+            <!-- Glow IA -->
+            <div style="
+                position:absolute;
+                width:100%;
+                height:100%;
+                background: radial-gradient(circle, rgba(0,255,0,0.25) 0%, transparent 70%);
+                animation: pulse 1.5s infinite;
+            "></div>
+
+            <!-- Línea radar -->
+            <div style="
+                position:absolute;
+                top:0;
+                left:0;
+                width:100%;
+                height:4px;
+                background: linear-gradient(90deg, transparent, #00ff00, transparent);
+                animation: scan 2s linear infinite;
+            "></div>
+
+        </div>
+    </div>
+
+    <style>
+    @keyframes scan {{
+        0% {{ top: 0%; }}
+        100% {{ top: 100%; }}
+    }}
+
+    @keyframes pulse {{
+        0% {{ opacity: 0.2; }}
+        50% {{ opacity: 0.9; }}
+        100% {{ opacity: 0.2; }}
+    }}
+    </style>
+    """
+
+    image_placeholder.markdown(html, unsafe_allow_html=True)
 
 # -------------------------
 # GOOGLE SHEETS
