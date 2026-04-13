@@ -133,8 +133,8 @@ if st.session_state.image_pil is not None:
 # -------------------------
 # CONFIG MODELO (AJUSTA SI CAMBIA)
 # -------------------------
-MODEL_URL = "PON_AQUI_TU_ENDPOINT_ROBOFLOW"
-API_KEY = "PON_AQUI_TU_API_KEY"
+MODEL_URL = "https://detect.roboflow.com/planograma_ai_simz_v1/2"
+API_KEY = "6Ln0uRwFG6fRkoQBO6Oq"
 
 # -------------------------
 # BOTÓN ANALIZAR
