@@ -186,6 +186,8 @@ if st.button("🚀 Analizar"):
             draw.text((x1, y1 - 15), nombre, fill="lime")
 
         image_placeholder.image(img, width=350)
+        st.success(f"🔍 Se detectaron {conteo} Refrigerantes verdes Simoniz")
+
 
         # -------------------------
         # GUARDAR
