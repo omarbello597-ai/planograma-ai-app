@@ -78,12 +78,10 @@ def subir_imagen_cloudinary(image_pil, nombre_archivo):
 # -------------------------
 # def mostrar_scanner_overlay(image, image_placeholder):
  #   image_placeholder.image(image, width=350)
-# -------------------------
-# SCANNER VISUAL
-# -------------------------
 def mostrar_scanner_overlay(image, image_placeholder):
     import base64
     from io import BytesIO
+    import streamlit.components.v1 as components
 
     buffer = BytesIO()
     image.save(buffer, format="JPEG")
@@ -102,10 +100,8 @@ def mostrar_scanner_overlay(image, image_placeholder):
             height:100%;
             border-radius:10px;
             overflow:hidden;
-            pointer-events:none;
         ">
 
-            <!-- Glow IA -->
             <div style="
                 position:absolute;
                 width:100%;
@@ -114,7 +110,6 @@ def mostrar_scanner_overlay(image, image_placeholder):
                 animation: pulse 1.5s infinite;
             "></div>
 
-            <!-- Línea radar -->
             <div style="
                 position:absolute;
                 top:0;
@@ -142,7 +137,8 @@ def mostrar_scanner_overlay(image, image_placeholder):
     </style>
     """
 
-    image_placeholder.markdown(html, unsafe_allow_html=True)
+    components.html(html, height=350)
+
 
 # -------------------------
 # GOOGLE SHEETS
