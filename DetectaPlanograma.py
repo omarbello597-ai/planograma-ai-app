@@ -57,7 +57,7 @@ def subir_imagen_drive(image_pil, nombre_archivo):
         img_bytes.seek(0)
 
         # 🔥 PON AQUÍ TU ID DE CARPETA
-        FOLDER_ID = "1YJgdswe7l0ZtEDhTRpBNEvpBiZMj8DdC"
+        FOLDER_ID = "1L-k4K0ls755fY7667oVtSsPUpbxdVvSF"
 
         file_metadata = {
             'name': nombre_archivo,
