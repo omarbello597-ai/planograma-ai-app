@@ -5,9 +5,8 @@ import pandas as pd
 from datetime import datetime
 import gspread
 from google.oauth2.service_account import Credentials
-from googleapiclient.discovery import build
-from googleapiclient.http import MediaIoBaseUpload
-import base64
+import cloudinary
+import cloudinary.uploader
 from io import BytesIO
 import time
 import io
@@ -16,6 +15,15 @@ import io
 # CONFIG
 # -------------------------
 st.set_page_config(page_title="AI Vision System", layout="wide")
+
+# -------------------------
+# CLOUDINARY CONFIG 🔥
+# -------------------------
+cloudinary.config(
+    cloud_name="dax3fphba",
+    api_key="382884411682566",
+    api_secret="zemqZpfISOWypf6JzA1RM_wps7Q"
+)
 
 # -------------------------
 # SESSION STATE
@@ -46,36 +54,23 @@ def procesar_imagen(uploaded_file):
         return None, None
 
 # -------------------------
-# SUBIR A DRIVE (FIX FINAL 🔥)
+# SUBIR A CLOUDINARY 🚀
 # -------------------------
-def subir_imagen_drive(image_pil, nombre_archivo):
+def subir_imagen_cloudinary(image_pil, nombre_archivo):
     try:
-        drive_service = build('drive', 'v3', credentials=creds)
-
         img_bytes = io.BytesIO()
         image_pil.save(img_bytes, format='JPEG')
         img_bytes.seek(0)
 
-        # 🔥 PON AQUÍ TU ID DE CARPETA
-        FOLDER_ID = "1L-k4K0ls755fY7667oVtSsPUpbxdVvSF"
+        response = cloudinary.uploader.upload(
+            img_bytes,
+            public_id=nombre_archivo
+        )
 
-        file_metadata = {
-            'name': nombre_archivo,
-            'parents': [FOLDER_ID]
-        }
-
-        media = MediaIoBaseUpload(img_bytes, mimetype='image/jpeg')
-
-        file = drive_service.files().create(
-            body=file_metadata,
-            media_body=media,
-            fields='id'
-        ).execute()
-
-        return file.get('id')
+        return response['secure_url']
 
     except Exception as e:
-        st.error(f"Error subiendo imagen a Drive: {e}")
+        st.error(f"Error subiendo imagen: {e}")
         return None
 
 # -------------------------
@@ -92,8 +87,7 @@ creds_dict = st.secrets["gcp_service_account"]
 creds = Credentials.from_service_account_info(
     creds_dict,
     scopes=[
-        "https://www.googleapis.com/auth/spreadsheets",
-        "https://www.googleapis.com/auth/drive"
+        "https://www.googleapis.com/auth/spreadsheets"
     ],
 )
 
@@ -131,7 +125,7 @@ if st.session_state.image_pil is not None:
     image_placeholder.image(st.session_state.image_pil, width=350)
 
 # -------------------------
-# CONFIG MODELO (AJUSTA SI CAMBIA)
+# CONFIG MODELO
 # -------------------------
 MODEL_URL = "https://detect.roboflow.com/planograma_ai_simz_v1/2"
 API_KEY = "6Ln0uRwFG6fRkoQBO6Oq"
@@ -197,12 +191,10 @@ if st.button("🚀 Analizar"):
         # GUARDAR
         # -------------------------
         fecha = datetime.now().strftime("%Y%m%d_%H%M%S")
-        nombre_archivo = f"{tienda}_{fecha}.jpg"
+        nombre_archivo = f"{tienda}_{fecha}"
 
-        # 🔥 Guarda imagen con detecciones
-        file_id = subir_imagen_drive(img, nombre_archivo)
-
-        link = f"https://drive.google.com/uc?id={file_id}" if file_id else ""
+        # 🔥 Subir a Cloudinary
+        link = subir_imagen_cloudinary(img, nombre_archivo)
 
         sheet.append_row([
             tienda,
