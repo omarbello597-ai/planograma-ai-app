@@ -78,67 +78,13 @@ def subir_imagen_cloudinary(image_pil, nombre_archivo):
 # -------------------------
 # def mostrar_scanner_overlay(image, image_placeholder):
  #   image_placeholder.image(image, width=350)
-def mostrar_scanner_overlay(image, image_placeholder):
-    import base64
-    from io import BytesIO
-    import streamlit.components.v1 as components
+# Mostrar radar
+mostrar_scanner_overlay(st.session_state.image_pil)
 
-    buffer = BytesIO()
-    image.save(buffer, format="JPEG")
-    img_base64 = base64.b64encode(buffer.getvalue()).decode()
+time.sleep(2)
 
-    html = f"""
-    <div style="position: relative; width: 350px;">
-        <img src="data:image/jpeg;base64,{img_base64}" 
-             style="width:100%; border-radius:10px; display:block;"/>
-
-        <div style="
-            position:absolute;
-            top:0;
-            left:0;
-            width:100%;
-            height:100%;
-            border-radius:10px;
-            overflow:hidden;
-        ">
-
-            <div style="
-                position:absolute;
-                width:100%;
-                height:100%;
-                background: radial-gradient(circle, rgba(0,255,0,0.25) 0%, transparent 70%);
-                animation: pulse 1.5s infinite;
-            "></div>
-
-            <div style="
-                position:absolute;
-                top:0;
-                left:0;
-                width:100%;
-                height:4px;
-                background: linear-gradient(90deg, transparent, #00ff00, transparent);
-                animation: scan 2s linear infinite;
-            "></div>
-
-        </div>
-    </div>
-
-    <style>
-    @keyframes scan {{
-        0% {{ top: 0%; }}
-        100% {{ top: 100%; }}
-    }}
-
-    @keyframes pulse {{
-        0% {{ opacity: 0.2; }}
-        50% {{ opacity: 0.9; }}
-        100% {{ opacity: 0.2; }}
-    }}
-    </style>
-    """
-
-    components.html(html, height=350)
-
+# Mostrar resultado FINAL (reemplaza visualmente)
+image_placeholder.image(img, width=350)
 
 # -------------------------
 # GOOGLE SHEETS
@@ -201,9 +147,13 @@ if st.button("🚀 Analizar"):
 
     else:
 
-        mostrar_scanner_overlay(st.session_state.image_pil, image_placeholder)
-        time.sleep(1)
+        # 🟢 1. Mostrar radar
+        mostrar_scanner_overlay(st.session_state.image_pil)
 
+        # ⏳ 2. Pausa para que se vea
+        time.sleep(2)
+
+        # 🧠 3. Llamar modelo
         response = requests.post(
             MODEL_URL,
             params={"api_key": API_KEY},
@@ -217,20 +167,7 @@ if st.button("🚀 Analizar"):
 
         conteo = len(predictions)
 
-        if conteo > 0:
-            productos = [
-                MAPEO_PRODUCTOS.get(p["class"], p["class"])
-                for p in predictions
-            ]
-            producto = pd.Series(productos).value_counts().idxmax()
-
-            confianza = round(
-                sum([p["confidence"] for p in predictions]) / conteo, 2
-            )
-        else:
-            producto = "No detectado"
-            confianza = 0
-
+        # 🟩 4. Dibujar resultados
         img = st.session_state.image_pil.copy()
         draw = ImageDraw.Draw(img)
 
@@ -246,9 +183,11 @@ if st.button("🚀 Analizar"):
             draw.rectangle([x1, y1, x2, y2], outline="lime", width=3)
             draw.text((x1, y1 - 15), nombre, fill="lime")
 
+        # 🟩 5. Mostrar resultado final
         image_placeholder.image(img, width=350)
-        st.success(f"🔍 Se detectaron {conteo} Refrigerantes verdes Simoniz")
 
+        # 📊 6. Mostrar conteo
+        st.success(f"🔍 Se detectaron {conteo} Refrigerantes verdes Simoniz")
 
         # -------------------------
         # GUARDAR
