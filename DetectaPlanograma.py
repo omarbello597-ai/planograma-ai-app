@@ -79,12 +79,68 @@ def subir_imagen_cloudinary(image_pil, nombre_archivo):
 # def mostrar_scanner_overlay(image, image_placeholder):
  #   image_placeholder.image(image, width=350)
 # Mostrar radar
-mostrar_scanner_overlay(st.session_state.image_pil)
+def mostrar_scanner_overlay(image):
+    import base64
+    from io import BytesIO
+    import streamlit.components.v1 as components
 
-time.sleep(2)
+    buffer = BytesIO()
+    image.save(buffer, format="JPEG")
+    img_base64 = base64.b64encode(buffer.getvalue()).decode()
 
-# Mostrar resultado FINAL (reemplaza visualmente)
-image_placeholder.image(img, width=350)
+    html = f"""
+    <div style="position: relative; width: 350px;">
+        <img src="data:image/jpeg;base64,{img_base64}" 
+             style="width:100%; border-radius:10px; display:block;"/>
+
+        <div style="
+            position:absolute;
+            top:0;
+            left:0;
+            width:100%;
+            height:100%;
+            border-radius:10px;
+            overflow:hidden;
+        ">
+
+            <!-- Glow IA -->
+            <div style="
+                position:absolute;
+                width:100%;
+                height:100%;
+                background: radial-gradient(circle, rgba(0,255,0,0.25) 0%, transparent 70%);
+                animation: pulse 1.5s infinite;
+            "></div>
+
+            <!-- Línea radar -->
+            <div style="
+                position:absolute;
+                top:0;
+                left:0;
+                width:100%;
+                height:4px;
+                background: linear-gradient(90deg, transparent, #00ff00, transparent);
+                animation: scan 2s linear infinite;
+            "></div>
+
+        </div>
+    </div>
+
+    <style>
+    @keyframes scan {{
+        0% {{ top: 0%; }}
+        100% {{ top: 100%; }}
+    }}
+
+    @keyframes pulse {{
+        0% {{ opacity: 0.2; }}
+        50% {{ opacity: 0.9; }}
+        100% {{ opacity: 0.2; }}
+    }}
+    </style>
+    """
+
+    components.html(html, height=350)
 
 # -------------------------
 # GOOGLE SHEETS
