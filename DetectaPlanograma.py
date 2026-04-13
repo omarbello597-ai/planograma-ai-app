@@ -5,6 +5,8 @@ import pandas as pd
 from datetime import datetime
 import gspread
 from google.oauth2.service_account import Credentials
+from googleapiclient.discovery import build
+from googleapiclient.http import MediaIoBaseUpload
 import base64
 from io import BytesIO
 import time
@@ -32,183 +34,55 @@ MAPEO_PRODUCTOS = {
 }
 
 # -------------------------
-# SCANNER NIVEL NASA
-# -------------------------
-def mostrar_scanner_overlay(image, image_placeholder):
-
-    buffer = BytesIO()
-    image.save(buffer, format="JPEG")
-    img_base64 = base64.b64encode(buffer.getvalue()).decode()
-
-    html = f"""
-    <style>
-    .container {{
-        position: relative;
-        width: 350px;
-    }}
-
-    .container img {{
-        width: 100%;
-        border-radius: 10px;
-    }}
-
-    .radar {{
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        border-radius: 10px;
-        overflow: hidden;
-    }}
-
-    .radar::before {{
-        content: "";
-        position: absolute;
-        width: 100%;
-        height: 100%;
-        border-radius: 50%;
-        border: 2px solid rgba(0,255,0,0.3);
-    }}
-
-    .radar-sweep {{
-        position: absolute;
-        width: 100%;
-        height: 100%;
-        background: conic-gradient(
-            rgba(0,255,0,0.4) 0deg,
-            rgba(0,255,0,0.1) 30deg,
-            transparent 60deg
-        );
-        border-radius: 50%;
-        animation: radarRotate 2s linear forwards;
-    }}
-
-    .radar::after {{
-        content: "";
-        position: absolute;
-        width: 10px;
-        height: 10px;
-        background: lime;
-        border-radius: 50%;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        box-shadow: 0 0 20px lime;
-    }}
-
-    @keyframes radarRotate {{
-        from {{ transform: rotate(0deg); }}
-        to {{ transform: rotate(360deg); }}
-    }}
-    </style>
-
-    <div class="container">
-        <img src="data:image/jpeg;base64,{img_base64}">
-        <div class="radar">
-            <div class="radar-sweep"></div>
-        </div>
-    </div>
-    """
-
-    image_placeholder.markdown(html, unsafe_allow_html=True)
-
-# -------------------------
 # PROCESAR IMAGEN
 # -------------------------
 def procesar_imagen(uploaded_file):
     try:
-        file_bytes = uploaded_file.getvalue()
-
-        if not file_bytes or len(file_bytes) < 1000:
-            st.error("⚠️ Error al cargar la imagen")
-            return None, None
-
-        image = Image.open(BytesIO(file_bytes))
-        image = image.convert("RGB")
-        image = image.resize((800, 800))
-
-        buffer = BytesIO()
-        image.save(buffer, format="JPEG", quality=85)
-
-        return image, buffer.getvalue()
-
-    except Exception as e:
-        st.error("❌ Error procesando imagen")
-        st.write(e)
+        image = Image.open(uploaded_file).convert("RGB")
+        img_bytes = BytesIO()
+        image.save(img_bytes, format="JPEG")
+        return image, img_bytes.getvalue()
+    except:
         return None, None
 
 # -------------------------
-# GOOGLE DRIVE (NUEVO)
+# SUBIR A DRIVE (FIX FINAL 🔥)
 # -------------------------
-from googleapiclient.discovery import build
-from googleapiclient.http import MediaIoBaseUpload
-
-def subir_imagen_drive(image, nombre_archivo):
-
+def subir_imagen_drive(image_pil, nombre_archivo):
     try:
-        drive_service = build("drive", "v3", credentials=creds)
+        drive_service = build('drive', 'v3', credentials=creds)
 
-        buffer = io.BytesIO()
-        image.save(buffer, format="JPEG")
-        buffer.seek(0)
+        img_bytes = io.BytesIO()
+        image_pil.save(img_bytes, format='JPEG')
+        img_bytes.seek(0)
+
+        # 🔥 PON AQUÍ TU ID DE CARPETA
+        FOLDER_ID = "1zepZlzuhfCBMy3xUrLDduSRiOV350tf_"
 
         file_metadata = {
-            "name": nombre_archivo,
-            "mimeType": "image/jpeg"
+            'name': nombre_archivo,
+            'parents': [FOLDER_ID]
         }
 
-        media = MediaIoBaseUpload(buffer, mimetype="image/jpeg")
+        media = MediaIoBaseUpload(img_bytes, mimetype='image/jpeg')
 
         file = drive_service.files().create(
             body=file_metadata,
             media_body=media,
-            fields="id"
+            fields='id'
         ).execute()
 
-        return file.get("id")
+        return file.get('id')
 
     except Exception as e:
-        st.error("Error subiendo imagen a Drive")
-        st.write(e)
+        st.error(f"Error subiendo imagen a Drive: {e}")
         return None
 
 # -------------------------
-# FONDO
+# SCANNER VISUAL
 # -------------------------
-def get_base64(file):
-    with open(file, "rb") as f:
-        return base64.b64encode(f.read()).decode()
-
-img_base64 = get_base64("fondo.png")
-
-st.markdown(f"""
-<style>
-[data-testid="stAppViewContainer"] {{
-    background: url("data:image/png;base64,{img_base64}");
-    background-size: cover;
-}}
-
-.main, .block-container {{
-    background: transparent !important;
-}}
-
-html, body {{
-    color: white;
-}}
-</style>
-""", unsafe_allow_html=True)
-
-# -------------------------
-# HEADER
-# -------------------------
-st.markdown("<h2 style='color:#00f5ff;'>🤖 AI Vision System</h2>", unsafe_allow_html=True)
-
-# -------------------------
-# API
-# -------------------------
-API_KEY = "6Ln0uRwFG6fRkoQBO6Oq"
-MODEL_URL = "https://detect.roboflow.com/planograma_ai_simz_v1/2"
+def mostrar_scanner_overlay(image, image_placeholder):
+    image_placeholder.image(image, width=350)
 
 # -------------------------
 # GOOGLE SHEETS
@@ -234,7 +108,7 @@ mercaderista = st.text_input("👤 Nombre del mercaderista")
 
 uploaded_file = st.file_uploader(
     "📸 Toma o sube una foto",
-    type=["jpg", "jpeg", "png", "heic", "heif"]
+    type=["jpg", "jpeg", "png"]
 )
 
 # -------------------------
@@ -257,6 +131,12 @@ if st.session_state.image_pil is not None:
     image_placeholder.image(st.session_state.image_pil, width=350)
 
 # -------------------------
+# CONFIG MODELO (AJUSTA SI CAMBIA)
+# -------------------------
+MODEL_URL = "PON_AQUI_TU_ENDPOINT_ROBOFLOW"
+API_KEY = "PON_AQUI_TU_API_KEY"
+
+# -------------------------
 # BOTÓN ANALIZAR
 # -------------------------
 if st.button("🚀 Analizar"):
@@ -267,7 +147,7 @@ if st.button("🚀 Analizar"):
     else:
 
         mostrar_scanner_overlay(st.session_state.image_pil, image_placeholder)
-        time.sleep(2)
+        time.sleep(1)
 
         response = requests.post(
             MODEL_URL,
@@ -314,14 +194,15 @@ if st.button("🚀 Analizar"):
         image_placeholder.image(img, width=350)
 
         # -------------------------
-        # GUARDAR IMAGEN + DATOS (🔥 NUEVO)
+        # GUARDAR
         # -------------------------
         fecha = datetime.now().strftime("%Y%m%d_%H%M%S")
         nombre_archivo = f"{tienda}_{fecha}.jpg"
 
-        file_id = subir_imagen_drive(st.session_state.image_pil, nombre_archivo)
+        # 🔥 Guarda imagen con detecciones
+        file_id = subir_imagen_drive(img, nombre_archivo)
 
-        link = f"https://drive.google.com/file/d/{file_id}/view" if file_id else ""
+        link = f"https://drive.google.com/uc?id={file_id}" if file_id else ""
 
         sheet.append_row([
             tienda,
@@ -332,4 +213,4 @@ if st.button("🚀 Analizar"):
             link
         ])
 
-        st.success("✅ Guardado correctamente con imagen")
+        st.success("✅ Guardado correctamente con imagen 🚀")
